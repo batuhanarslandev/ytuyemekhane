@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yemekhane | Günlük Saha Denetimi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        input[type="radio"]:checked + div { border-color: #3b82f6; background-color: #eff6ff; }
+        .is-red:checked + div { border-color: #ef4444; background-color: #fef2f2; }
+        .is-green:checked + div { border-color: #22c55e; background-color: #f0fdf4; }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen font-sans">
+
+    {% include 'sidebar.html' %}
+
+    <div class="ml-64 flex-1 p-10 min-w-0 w-full">
+        {% include 'topbar.html' %}
+        
+        <div class="mb-10 border-b border-gray-200 pb-6 flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl font-black text-gray-800">📋 Günlük Saha Denetim Formu</h1>
+                <p class="text-gray-500 font-bold mt-2">Diyetisyen ve Tekniker için günlük operasyon kalite kontrol listesi.</p>
+            </div>
+            <form action="/denetim" method="GET" class="flex gap-2 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+                <input type="date" name="tarih" value="{{ secilen_tarih }}" class="border border-gray-200 rounded-lg p-3 font-bold text-sm outline-none bg-gray-50" onchange="this.form.submit()">
+            </form>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="p-4 mb-8 rounded-xl font-bold shadow-sm {% if category == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="/denetim" method="POST" class="space-y-8 w-full max-w-5xl mx-auto pb-20">
+            <input type="hidden" name="tarih" value="{{ secilen_tarih }}">
+
+            {% if kayit %}
+            <div class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-2xl flex items-center gap-3">
+                <span class="text-xl">ℹ️</span>
+                <div>
+                    <h4 class="font-black text-sm">Bu form bugün doldurulmuş veya güncellenmiştir.</h4>
+                    <span class="text-xs font-bold opacity-80">Son güncelleyen: {{ kayit.denetmen }} ({{ kayit.son_guncelleme[:16] }})</span>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- BÖLÜM 1: DEPO KONTROLÜ -->
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                <h3 class="text-xl font-black text-gray-800 mb-6 border-b pb-2 flex items-center gap-2">📦 Depo & Stok Alanı</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="depo_durum" value="Uygun" class="peer hidden is-green" {% if kayit and kayit.depo_durum == 'Uygun' %}checked{% endif %}>
+                        <div class="border-2 border-gray-200 rounded-xl p-4 text-center transition hover:bg-gray-50 flex flex-col justify-center h-full">
+                            <span class="font-black text-sm text-gray-700">✔️ Depo Gezildi (Uygun)</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="depo_durum" value="Sorunlu" class="peer hidden is-red" {% if kayit and kayit.depo_durum == 'Sorunlu' %}checked{% endif %}>
+                        <div class="border-2 border-gray-200 rounded-xl p-4 text-center transition hover:bg-gray-50 flex flex-col justify-center h-full">
+                            <span class="font-black text-sm text-gray-700">⚠️ Sorunlu Ürün / Yerleşim Var</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="depo_durum" value="Bekliyor" class="peer hidden" {% if not kayit or kayit.depo_durum == 'Bekliyor' %}checked{% endif %}>
+                        <div class="border-2 border-gray-200 rounded-xl p-4 text-center transition hover:bg-gray-50 flex flex-col justify-center h-full bg-gray-100">
+                            <span class="font-black text-sm text-gray-500">⏳ Henüz Bakılmadı</span>
+                        </div>
+                    </label>
+                </div>
+                <input type="text" name="depo_not" value="{{ kayit.depo_not if kayit else '' }}" placeholder="Varsa sorunlu ürünler veya depo notunuzu buraya yazın..." class="w-full border border-gray-200 p-4 rounded-xl font-bold text-sm bg-gray-50 outline-none focus:border-blue-400 text-gray-700">
+            </div>
+
+            <!-- BÖLÜM 2: ÜRETİM VE TADIM -->
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                <h3 class="text-xl font-black text-gray-800 mb-6 border-b pb-2 flex items-center gap-2">🍲 Üretim & Yemek Tadımı</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="tadim_durum" value="Uygun" class="peer hidden is-green" {% if kayit and kayit.tadim_durum == 'Uygun' %}checked{% endif %}>
+                        <div class="border-2 border-gray-200 rounded-xl p-4 text-center transition hover:bg-gray-50 flex flex-col justify-center h-full">
+                            <span class="font-black text-sm text-gray-700">✔️ Tümüne Bakıldı, Uygun</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="tadim_durum" value="Düzeltildi" class="peer hidden is-green" {% if kayit and kayit.tadim_durum == 'Düzeltildi' %}checked{% endif %}>
+                        <div class="border-2 border-gray-200 rounded-xl p-4 text-center transition hover:bg-gray-50 flex flex-col justify-center h-full">
+                            <span class="font-black text-sm text-gray-700">🔄 Müdahale Edildi / Düzeltildi</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="tadim_durum" value="Kritik" class="peer hidden is-red" {% if kayit and kayit.tadim_durum == 'Kritik' %}checked{% endif %}>
+                        <div class="border-2 border-gray-200 rounded-xl p-4 text-center transition hover:bg-gray-50 flex flex-col justify-center h-full">
+                            <span class="font-black text-sm text-gray-700">✖️ Kritik Sorun Bulundu</span>
+                        </div>
+                    </label>
+                </div>
+                <input type="text" name="tadim_not" value="{{ kayit.tadim_not if kayit else '' }}" placeholder="Hangi yemekte sorun vardı, nasıl müdahale edildi?" class="w-full border border-gray-200 p-4 rounded-xl font-bold text-sm bg-gray-50 outline-none focus:border-blue-400 text-gray-700">
+            </div>
+
+            <!-- BÖLÜM 3: SERVİS VE HİJYEN -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                    <h3 class="text-xl font-black text-gray-800 mb-6 border-b pb-2 flex items-center gap-2">🌡️ Servis & Benmari</h3>
+                    
+                    <div class="flex gap-4 mb-4">
+                        <label class="cursor-pointer flex-1">
+                            <input type="radio" name="benmari_durum" value="Uygun" class="peer hidden is-green" {% if kayit and kayit.benmari_durum == 'Uygun' %}checked{% endif %}>
+                            <div class="border-2 border-gray-200 rounded-xl p-4 text-center transition hover:bg-gray-50 h-full flex flex-col justify-center">
+                                <span class="font-black text-sm text-gray-700 block">✔️ Uygun</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer flex-1">
+                            <input type="radio" name="benmari_durum" value="Sorunlu" class="peer hidden is-red" {% if kayit and kayit.benmari_durum == 'Sorunlu' %}checked{% endif %}>
+                            <div class="border-2 border-gray-200 rounded-xl p-4 text-center transition hover:bg-gray-50 h-full flex flex-col justify-center">
+                                <span class="font-black text-sm text-gray-700 block">⚠️ Soğuk / Arızalı</span>
+                            </div>
+                        </label>
+                    </div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ölçülen Sıcaklık (°C)</label>
+                    <input type="text" name="benmari_not" value="{{ kayit.benmari_not if kayit else '' }}" placeholder="Örn: Dağıtım anında 68°C" class="w-full border border-gray-200 p-3 rounded-xl font-bold text-sm bg-gray-50 outline-none focus:border-blue-400 text-gray-700">
+                </div>
+
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                    <h3 class="text-xl font-black text-gray-800 mb-6 border-b pb-2 flex items-center gap-2">🛡️ Yasal Denetim & Hijyen</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center border-b border-gray-50 pb-3">
+                            <div>
+                                <span class="font-bold text-gray-800 block text-sm">72 Saatlik Şahit Numune</span>
+                                <span class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">TÜM ÇEŞİTLERDEN ALINDI MI?</span>
+                            </div>
+                            <select name="numune_durum" class="border border-gray-200 rounded-lg p-2 text-xs font-bold outline-none {% if kayit and kayit.numune_durum == 'Alındı' %}bg-green-100 text-green-700{% endif %} text-gray-700">
+                                <option value="Bekliyor" {% if not kayit or kayit.numune_durum == 'Bekliyor' %}selected{% endif %}>Bekliyor</option>
+                                <option value="Alındı" {% if kayit and kayit.numune_durum == 'Alındı' %}selected{% endif %}>✔️ Alındı</option>
+                                <option value="Unutuldu" {% if kayit and kayit.numune_durum == 'Unutuldu' %}selected{% endif %}>✖️ Unutuldu</option>
+                            </select>
+                        </div>
+
+                        <div class="flex justify-between items-center pb-3">
+                            <div>
+                                <span class="font-bold text-gray-800 block text-sm">Personel Hijyeni</span>
+                                <span class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">KILIK, KIYAFET, ELDİVEN, BONE</span>
+                            </div>
+                            <select name="hijyen_durum" class="border border-gray-200 rounded-lg p-2 text-xs font-bold outline-none {% if kayit and kayit.hijyen_durum == 'Uygun' %}bg-green-100 text-green-700{% endif %} text-gray-700">
+                                <option value="Bekliyor" {% if not kayit or kayit.hijyen_durum == 'Bekliyor' %}selected{% endif %}>Bekliyor</option>
+                                <option value="Uygun" {% if kayit and kayit.hijyen_durum == 'Uygun' %}selected{% endif %}>✔️ Uygun</option>
+                                <option value="Uyarıldı" {% if kayit and kayit.hijyen_durum == 'Uyarıldı' %}selected{% endif %}>⚠️ Uyarıldı / Müdahale Edildi</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- BÖLÜM 4: GÜNLÜK SEYİR DEFTERİ -->
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 border-l-8 border-l-orange-500">
+                <h3 class="text-xl font-black text-gray-800 mb-2 flex items-center gap-2">📝 Günlük Operasyon Seyir Defteri</h3>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6">İHTAR VEYA TUTANAĞA GEREK OLMAYAN UFAK DAĞITIM VE OPERASYON SORUNLARI</p>
+                <textarea name="ufak_sorunlar" rows="4" placeholder="Örn: Dağıtımda ekmekler geç geldi, geçici olarak idare edildi vb..." class="w-full border border-gray-200 p-4 rounded-xl font-bold text-sm bg-gray-50 outline-none focus:border-orange-400 resize-none text-gray-700">{{ kayit.ufak_sorunlar if kayit else '' }}</textarea>
+            </div>
+
+            <button type="submit" class="w-full bg-gray-900 text-white font-black py-5 rounded-2xl hover:bg-black transition shadow-xl text-lg uppercase tracking-widest">
+                DENETİM FORMUNU KAYDET
+            </button>
+
+        </form>
+    </div>
+</body>
+</html>

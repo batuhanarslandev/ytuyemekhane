@@ -1,0 +1,117 @@
+<aside class="hidden md:flex flex-col w-64 bg-gray-900 h-screen fixed top-0 left-0 shadow-2xl z-50 border-r border-gray-800">
+    <div class="h-20 flex items-center justify-center border-b border-gray-800 bg-gray-950">
+        <a href="/" class="text-white text-xl font-black tracking-tight flex items-center gap-3 hover:scale-105 transition-transform">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="YTÜ" class="h-10 w-10 object-contain drop-shadow-md bg-white rounded-full p-0.5">
+            <span>Yemekhane<span class="text-indigo-500">.OS</span></span>
+        </a>
+    </div>
+
+    <div class="flex-1 overflow-y-auto py-6 px-4 custom-scrollbar space-y-1">
+        <div class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 ml-2 mt-2">Ana Modüller</div>
+        <a href="/" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-indigo-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+            Sistem Portalı
+        </a>
+        <a href="/ajanda" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-blue-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform drop-shadow-sm"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
+            Kurumsal Ajanda
+        </a>
+        <a href="/depo" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-indigo-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+            Depo & Stok
+        </a>
+        <a href="/mal-kabul" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-emerald-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            Mal Kabul
+        </a>
+
+        {% if session.rol == 'admin' %}
+        <div class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 ml-2 mt-6">Üretim & Mutfak</div>
+        <a href="/uretim" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-orange-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="m2 22 5-5"/><path d="M2 13.5v-2c0-1.4 1.1-2.5 2.5-2.5h15c1.4 0 2.5 1.1 2.5 2.5v2c0 1.4-1.1 2.5-2.5 2.5h-15c-1.4 0-2.5-1.1-2.5-2.5z"/><path d="M12 9V3"/><path d="M12 3a2 2 0 0 0-2-2h-2"/><path d="M12 3a2 2 0 0 1 2-2h2"/></svg>
+            Günlük Üretim
+        </a>
+        <a href="/et-isleme" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-red-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            Et İşleme
+        </a>
+        <a href="/kumanya" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-yellow-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.93a2 2 0 0 0-1.66-.9l-.82-1.2A2 2 0 0 0 12 3H8"/><path d="M2 14h20"/><path d="M2 10h20"/><path d="M2 18h20"/></svg>
+            Kumanya Planlama
+        </a>
+        <a href="/yedek-uretim" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-cyan-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="m10 20-3-3 3-3"/><path d="M2 22v-3a9 9 0 0 1 9-9h9"/><path d="m14 2-3 3 3 3"/></svg>
+            Dondurucu / İmalat
+        </a>
+
+        <div class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 ml-2 mt-6">İdari İşlemler</div>
+        <a href="/personel" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-pink-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Personel & İK
+        </a>
+        <a href="/satis" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-teal-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+            Satış & Etkinlik
+        </a>
+        <a href="/ihtar-tutanak" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-rose-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.287 1.288L3 12l5.8 1.9a2 2 0 0 1 1.288 1.287L12 21l1.9-5.8a2 2 0 0 1 1.287-1.288L21 12l-5.8-1.9a2 2 0 0 1-1.288-1.287Z"/></svg>
+            Firma İlişkileri
+        </a>
+
+        <div class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 ml-2 mt-6">Saha & Denetim</div>
+        <a href="/denetim" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-sky-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15L11 17L15 13"/></svg>
+            Saha Denetimi
+        </a>
+        <a href="/periyodik-bakim" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-purple-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            Periyodik Bakım
+        </a>
+        <a href="/raporlar" class="flex items-center gap-3 text-gray-300 hover:text-white hover:bg-gray-600/20 p-3 rounded-xl transition-all font-bold group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:scale-110 transition-transform"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            Gün Sonu Raporları
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="p-4 border-t border-gray-800 bg-gray-950">
+        <div class="flex items-center gap-3 mb-4 px-2">
+            <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-black text-lg border-2 border-indigo-400 shadow-lg">{{ session.isim[:1] }}</div>
+            <div class="overflow-hidden">
+                <span class="block text-sm font-black text-white truncate">{{ session.isim }}</span>
+                <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest truncate">{{ session.rol }}</span>
+            </div>
+        </div>
+        <a href="/logout" class="w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white p-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all border border-red-500/20 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+            Çıkış Yap
+        </a>
+    </div>
+</aside>
+
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] z-[100] pb-safe">
+    <div class="flex justify-around items-center pt-2 pb-3 px-1">
+        <a href="/" class="flex flex-col items-center text-gray-400 hover:text-indigo-600 transition p-2 w-1/5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1 group-hover:scale-110 transition-transform"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+            <span class="text-[9px] font-black uppercase tracking-widest">Portal</span>
+        </a>
+        <a href="/mal-kabul" class="flex flex-col items-center text-gray-400 hover:text-emerald-600 transition p-2 w-1/5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1 group-hover:scale-110 transition-transform"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <span class="text-[9px] font-black uppercase tracking-widest">Kabul</span>
+        </a>
+        <a href="/depo" class="flex flex-col items-center text-gray-400 hover:text-blue-600 transition p-2 w-1/5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1 group-hover:scale-110 transition-transform"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+            <span class="text-[9px] font-black uppercase tracking-widest">Depo</span>
+        </a>
+        {% if session.rol == 'admin' %}
+        <a href="/satis" class="flex flex-col items-center text-gray-400 hover:text-teal-600 transition p-2 w-1/5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1 group-hover:scale-110 transition-transform"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+            <span class="text-[9px] font-black uppercase tracking-widest">Satış</span>
+        </a>
+        <a href="/denetim" class="flex flex-col items-center text-gray-400 hover:text-sky-600 transition p-2 w-1/5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1 group-hover:scale-110 transition-transform"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15L11 17L15 13"/></svg>
+            <span class="text-[9px] font-black uppercase tracking-widest">Denetim</span>
+        </a>
+        {% endif %}
+    </div>
+</nav>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yemekhane | Dış Hizmetler & Evrak Kontrol</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex min-h-screen font-sans">
+
+    {% include 'sidebar.html' %}
+
+    <div class="ml-64 flex-1 p-10 min-w-0">
+        {% include 'topbar.html' %}
+        
+        <div class="mb-8 border-b border-gray-200 pb-6">
+            <h1 class="text-3xl font-black text-gray-800">🎪 Dış Hizmetler & Evrak Kontrol Paneli</h1>
+            <p class="text-gray-500 font-bold mt-2">Dışarıdan gelen lokma, pilav vb. dağıtım hizmetlerini planlayın ve yasal/hijyen belgelerini denetleyin.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="p-4 mb-6 rounded-xl font-bold shadow-sm {% if category == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- HİZMET PLANLAMA FORMU -->
+        <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-teal-100 border-l-8 border-l-teal-600 mb-10">
+            <h3 class="text-xl font-black text-gray-800 mb-6 flex items-center gap-2">✍️ Yeni Dağıtım / Hizmet Planla</h3>
+            <form action="/dis-hizmetler" method="POST" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                <input type="hidden" name="islem_tipi" value="hizmet_ekle">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Tarih</label>
+                    <input type="date" name="tarih" value="{{ bugun }}" required class="w-full border-2 border-gray-100 p-4 rounded-xl font-bold outline-none focus:border-teal-500 bg-gray-50">
+                </div>
+                <div class="col-span-2">
+                    <!-- BURASI DEGISTI: DAĞITTIRAN KİŞİ (SPONSOR) -->
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Firma / Dağıttıran Kişi (Sponsor)</label>
+                    <input type="text" name="firma_adi" placeholder="Örn: Batuhan Arslan" required class="w-full border-2 border-gray-100 p-4 rounded-xl font-bold outline-none focus:border-teal-500 bg-gray-50 text-teal-800">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Hizmet / Ürün Türü</label>
+                    <input type="text" name="hizmet_turu" placeholder="Örn: Lokma Dağıtımı" required class="w-full border-2 border-gray-100 p-4 rounded-xl font-bold outline-none focus:border-teal-500 bg-gray-50">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Kısa Not</label>
+                    <input type="text" name="notlar" placeholder="Örn: Orta Bahçe Önü" class="w-full border-2 border-gray-100 p-4 rounded-xl font-bold outline-none focus:border-teal-500 bg-gray-50 text-sm">
+                </div>
+                <div class="col-span-1 md:col-span-5 mt-2">
+                    <button type="submit" class="w-full bg-teal-600 text-white font-black py-4 rounded-xl hover:bg-teal-700 transition shadow-sm text-sm uppercase tracking-widest">Planla ve Ajandaya İşle</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- LİSTE (Aynı Kalır) -->
+        <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+            <div class="bg-gray-800 p-5"><h3 class="text-white font-black text-sm uppercase tracking-widest">Planlanan Hizmetler ve Evrak Kontrol Formları</h3></div>
+            <div class="p-0 overflow-x-auto w-full">
+                <table class="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
+                    <thead class="text-gray-400 bg-gray-50 border-b border-gray-100 uppercase text-[10px] tracking-widest">
+                        <tr><th class="p-5">Tarih & Dağıttıran / Sponsor</th><th class="p-5 text-center">Hijyen Belgesi</th><th class="p-5 text-center">Tarım/Orman Kayıt No</th><th class="p-5 text-center">YTÜ Dağıtım İzni</th><th class="p-5 text-center">Evrak Durumu İşle</th><th class="p-5 text-right">Aksiyon</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        {% for h in hizmetler %}
+                        <tr class="hover:bg-teal-50/30">
+                            <td class="p-5">
+                                <span class="font-black text-gray-800 block text-lg">{{ h.firma_adi }}</span>
+                                <span class="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded">{{ h.hizmet_turu }}</span>
+                                <span class="text-[10px] font-bold text-gray-400 block mt-2">📅 {{ h.tarih }} | 📍 {{ h.notlar }}</span>
+                            </td>
+                            <form action="/dis-hizmetler" method="POST" class="m-0">
+                                <input type="hidden" name="islem_tipi" value="belge_guncelle"><input type="hidden" name="hizmet_id" value="{{ h.id }}">
+                                <td class="p-5 text-center"><select name="hijyen_belgesi" class="p-2 rounded-lg font-bold text-xs outline-none {% if h.hijyen_belgesi == 'Var' %}bg-green-100 text-green-700{% elif h.hijyen_belgesi == 'Eksik' %}bg-red-100 text-red-700{% else %}bg-orange-100 text-orange-700{% endif %}"><option value="Bekliyor" {% if h.hijyen_belgesi == 'Bekliyor' %}selected{% endif %}>⏳ Bekliyor</option><option value="Var" {% if h.hijyen_belgesi == 'Var' %}selected{% endif %}>✅ Teslim Edildi</option><option value="Eksik" {% if h.hijyen_belgesi == 'Eksik' %}selected{% endif %}>❌ Eksik/Uygunsuz</option></select></td>
+                                <td class="p-5 text-center"><select name="tarim_belgesi" class="p-2 rounded-lg font-bold text-xs outline-none {% if h.tarim_belgesi == 'Var' %}bg-green-100 text-green-700{% elif h.tarim_belgesi == 'Eksik' %}bg-red-100 text-red-700{% else %}bg-orange-100 text-orange-700{% endif %}"><option value="Bekliyor" {% if h.tarim_belgesi == 'Bekliyor' %}selected{% endif %}>⏳ Bekliyor</option><option value="Var" {% if h.tarim_belgesi == 'Var' %}selected{% endif %}>✅ Teslim Edildi</option><option value="Eksik" {% if h.tarim_belgesi == 'Eksik' %}selected{% endif %}>❌ Eksik/Uygunsuz</option></select></td>
+                                <td class="p-5 text-center"><select name="ytu_izni" class="p-2 rounded-lg font-bold text-xs outline-none {% if h.ytu_izni == 'Var' %}bg-green-100 text-green-700{% elif h.ytu_izni == 'Eksik' %}bg-red-100 text-red-700{% else %}bg-orange-100 text-orange-700{% endif %}"><option value="Bekliyor" {% if h.ytu_izni == 'Bekliyor' %}selected{% endif %}>⏳ Bekliyor</option><option value="Var" {% if h.ytu_izni == 'Var' %}selected{% endif %}>✅ Alındı (SKS)</option><option value="Eksik" {% if h.ytu_izni == 'Eksik' %}selected{% endif %}>❌ İzni Yok!</option></select></td>
+                                <td class="p-5 text-center"><button type="submit" class="bg-gray-200 hover:bg-teal-600 hover:text-white text-gray-700 font-bold px-4 py-2 rounded-lg text-xs transition">Durumları Kaydet</button></td>
+                            </form>
+                            <td class="p-5 text-right">
+                                <form action="/dis-hizmetler" method="POST" class="m-0" onsubmit="return confirm('Silmek istediğinize emin misiniz?');">
+                                    <input type="hidden" name="islem_tipi" value="hizmet_sil"><input type="hidden" name="hizmet_id" value="{{ h.id }}">
+                                    <button type="submit" class="text-red-400 hover:text-white hover:bg-red-500 font-bold text-xs bg-red-50 p-3 rounded-xl border border-red-100 transition shadow-sm">Sil 🗑️</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="p-10 text-center font-bold text-gray-400">Planlanan bir dış hizmet bulunmuyor.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

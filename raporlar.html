@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yemekhane | Raporlar & Analizler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f9fafb; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen font-sans">
+
+    {% include 'sidebar.html' %}
+
+    <div class="ml-64 flex-1 p-10 min-w-0">
+        {% include 'topbar.html' %}
+        
+        <div class="mb-10 border-b border-gray-200 pb-6">
+            <h1 class="text-3xl font-black text-gray-800 flex items-center gap-3"><span>📈</span> Raporlar & Analizler</h1>
+            <p class="text-gray-500 font-bold mt-2">Gün sonu kriz tutanakları ve üretim fire analizlerini buradan takip edebilirsiniz.</p>
+            
+            <div class="flex gap-4 mt-8">
+                <button onclick="switchTab('krizTab')" id="btn-krizTab" class="py-2.5 px-6 rounded-xl font-black text-sm transition-all duration-300 bg-indigo-600 text-white shadow-md border border-indigo-700 tab-btn flex items-center gap-2">
+                    <span class="text-lg">🚨</span> Gün Sonu Raporları
+                </button>
+                <button onclick="switchTab('fireTab')" id="btn-fireTab" class="py-2.5 px-6 rounded-xl font-black text-sm transition-all duration-300 bg-white text-gray-500 hover:bg-gray-100 border border-gray-200 tab-btn flex items-center gap-2">
+                    <span class="text-lg">🔥</span> Fire Takibi
+                </button>
+            </div>
+        </div>
+
+        <div id="krizTab" class="tab-content block">
+            <div class="space-y-8 w-full max-w-6xl mx-auto">
+                {% for rapor in raporlar %}
+                <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden relative">
+                    {% if rapor.yemek_yetmedi > 0 %}
+                    <div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-bl-3xl">🚨 Kriz Raporlandı</div>
+                    {% endif %}
+
+                    <div class="p-8 border-b border-gray-50 flex flex-col md:flex-row justify-between md:items-center gap-4 bg-gray-50/50">
+                        <div>
+                            <span class="text-sm font-black text-indigo-600 block mb-1 uppercase tracking-widest">{{ rapor.ogun }}</span>
+                            <h3 class="text-2xl font-black text-gray-800">{{ rapor.tarih }}</h3>
+                        </div>
+                        
+                        <div class="flex gap-4">
+                            <div class="bg-white px-5 py-3 rounded-2xl border border-gray-200 shadow-sm text-center">
+                                <span class="block text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Turnike / Gelen</span>
+                                <span class="text-2xl font-black text-gray-800">{{ rapor.toplam_gelen }}</span>
+                            </div>
+                            <div class="bg-white px-5 py-3 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4">
+                                <div class="text-center">
+                                    <span class="block text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Öğrenci</span>
+                                    <span class="text-lg font-black text-indigo-400">{{ rapor.ogrenci_sayisi }}</span>
+                                </div>
+                                <div class="w-px h-8 bg-gray-200"></div>
+                                <div class="text-center">
+                                    <span class="block text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Personel</span>
+                                    <span class="text-lg font-black text-indigo-400">{{ rapor.personel_sayisi }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><span>🍽️</span> O Gün Çıkan Yemekler</h4>
+                            <div class="space-y-2">
+                                {% for u in rapor.uretimler %}
+                                    <div class="flex justify-between items-center p-3 rounded-xl border {% if u.kategori == 'Takviye' %}bg-rose-50 border-rose-200{% else %}bg-gray-50 border-gray-100{% endif %}">
+                                        <div>
+                                            <span class="font-black text-gray-800 text-sm block">{{ u.yemek_adi }}</span>
+                                            <span class="text-[10px] font-bold text-gray-500 uppercase">
+                                                {% if u.kategori == 'Takviye' %}<b class="text-rose-500">🚨 TAKVİYE ÜRETİM</b>{% else %}{{ u.kategori }}{% endif %}
+                                            </span>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="block text-[10px] text-gray-400 font-black uppercase">Üretilen</span>
+                                            <span class="font-black text-gray-800">{{ u.planlanan_kisi }} <small class="text-[10px]">Pors.</small></span>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <p class="text-xs text-gray-400 font-bold italic">Üretim kaydı girilmemiş.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            {% if rapor.yemek_yetmedi > 0 %}
+                            <div class="bg-red-50 p-6 rounded-2xl border border-red-200">
+                                <h4 class="text-xs font-black text-red-600 uppercase tracking-widest mb-2 flex items-center gap-2"><span>🚨</span> Kriz Durumu (Yemek Bitti)</h4>
+                                <p class="text-sm font-bold text-red-900 mb-2">Belirtilen Öğünde <b class="text-xl mx-1 bg-white px-2 rounded">{{ rapor.yemek_yetmedi }}</b> Kişi Aç Kaldı / Yetişmedi.</p>
+                                <p class="text-xs text-red-700 bg-white p-3 rounded-lg border border-red-100 shadow-inner"><b>Alınan Aksiyon (Alternatif):</b> {{ rapor.alternatif_detay }}</p>
+                            </div>
+                            {% else %}
+                            <div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-200 h-full flex flex-col justify-center items-center text-center">
+                                <span class="text-4xl mb-2">✅</span>
+                                <h4 class="text-sm font-black text-emerald-700 uppercase tracking-widest mb-1">Sorunsuz Gün</h4>
+                                <p class="text-xs text-emerald-600 font-bold">Bu öğünde herhangi bir kriz veya yemek yetmeme durumu raporlanmamıştır.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center p-20">
+                    <span class="text-6xl opacity-20 block mb-4">📭</span>
+                    <h3 class="text-xl font-black text-gray-400">Henüz geçmişe dönük bir gün sonu kaydı bulunmuyor.</h3>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="fireTab" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center justify-start h-[550px]">
+                    <div class="w-full text-left mb-8 border-b border-gray-100 pb-4">
+                        <h3 class="font-black text-gray-800 text-lg flex items-center gap-2"><span class="text-2xl">📊</span> Kategori Bazlı Fire Dağılımı</h3>
+                        <p class="text-gray-400 text-xs font-bold mt-1">Hangi malzeme grubundan ne kadar kayıp verildi?</p>
+                    </div>
+                    {% if fire_kategori_verisi %}
+                    <div class="relative w-full max-w-[320px]">
+                        <canvas id="fireKategoriChart"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="flex-1 flex flex-col items-center justify-center w-full text-center">
+                        <span class="text-5xl mb-3 opacity-20">📉</span>
+                        <p class="text-sm font-bold text-gray-400">Grafik çizilecek yeterli fire verisi yok.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col h-[550px]">
+                    <div class="border-b border-gray-100 pb-4 mb-4">
+                        <h3 class="font-black text-gray-800 text-lg flex items-center gap-2"><span class="text-2xl">📝</span> Detaylı Fire Kayıtları</h3>
+                    </div>
+                    <div class="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="text-gray-400 uppercase text-[10px] tracking-widest sticky top-0 bg-white z-10">
+                                <tr>
+                                    <th class="pb-4">Tarih</th>
+                                    <th class="pb-4">Ürün & Kategori</th>
+                                    <th class="pb-4">Fire</th>
+                                    <th class="pb-4">Açıklama</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                {% for fire in fire_detay_verisi %}
+                                <tr class="hover:bg-orange-50 transition">
+                                    <td class="py-3 text-gray-500 font-bold text-xs">{{ fire.tarih[:16] }}</td>
+                                    <td class="py-3">
+                                        <span class="font-black text-gray-800 block">{{ fire.urun_adi }}</span>
+                                        <span class="text-[9px] font-bold text-gray-400 uppercase">{{ fire.kategori }}</span>
+                                    </td>
+                                    <td class="py-3 font-black text-orange-600">{{ fire.miktar }} <span class="text-xs">{{ fire.birim }}</span></td>
+                                    <td class="py-3 text-gray-500 text-xs italic truncate max-w-[150px]">{{ fire.aciklama }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="4" class="text-center py-10 text-gray-400 font-bold">Kayıtlı fire bulunmuyor.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // SEKME DEĞİŞTİRME FONKSİYONU
+        function switchTab(tabId) {
+            // Tüm sekmeleri gizle
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            
+            // Butonların tasarımını sıfırla (Pasif duruma getir)
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "py-2.5 px-6 rounded-xl font-black text-sm transition-all duration-300 bg-white text-gray-500 hover:bg-gray-100 border border-gray-200 tab-btn flex items-center gap-2";
+            });
+            
+            // İlgili sekmeyi göster
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            // Tıklanan butonu renklendir
+            const activeBtn = document.getElementById('btn-' + tabId);
+            if (tabId === 'krizTab') {
+                activeBtn.className = "py-2.5 px-6 rounded-xl font-black text-sm transition-all duration-300 bg-indigo-600 text-white shadow-md border border-indigo-700 tab-btn flex items-center gap-2";
+            } else if (tabId === 'fireTab') {
+                activeBtn.className = "py-2.5 px-6 rounded-xl font-black text-sm transition-all duration-300 bg-orange-600 text-white shadow-md border border-orange-700 tab-btn flex items-center gap-2";
+            }
+        }
+
+        // FİRE GRAFİĞİ ÇİZİM KODLARI (Chart.js)
+        const rawFireData = {{ fire_kategori_verisi | tojson | safe }};
+        
+        if (rawFireData && rawFireData.length > 0 && document.getElementById('fireKategoriChart')) {
+            const fireLabels = rawFireData.map(d => d.kategori + ' (' + d.birim + ')');
+            const fireValues = rawFireData.map(d => d.toplam_miktar);
+
+            new Chart(document.getElementById('fireKategoriChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: fireLabels,
+                    datasets: [{
+                        data: fireValues,
+                        backgroundColor: ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { padding: 20, font: { family: 'sans-serif', weight: 'bold', size: 12 } } 
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

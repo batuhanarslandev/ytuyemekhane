@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yemekhane | Dondurucu Deposu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex min-h-screen font-sans">
+
+    <!-- YENİ STANDART SOL MENÜ -->
+    {% include 'sidebar.html' %}
+
+    <!-- İÇERİK ALANI -->
+    <div class="ml-64 flex-1 p-10">
+        {% include 'topbar.html' %}
+        
+        <div class="mb-10">
+            <h1 class="text-3xl font-black text-gray-800">🧊 Dondurucu & Ön Hazırlık</h1>
+            <p class="text-gray-500 font-bold mt-2">Buradan üretilen yemeklerin malzemeleri, depodaki hammadde stoklarından seçtiğiniz tarih itibariyle düşülür.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="p-4 mb-6 rounded-xl font-bold shadow-sm {% if category == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- STOK EKLEME (İMALAT GİRİŞİ) FORMU -->
+            <div class="lg:col-span-1 bg-white p-8 rounded-[2rem] shadow-xl border-t-8 border-blue-600 self-start">
+                <h3 class="text-xl font-black text-gray-800 mb-6">İmalat Girişi Yap</h3>
+                
+                <form action="/yedek-uretim" method="POST" class="space-y-6">
+                    <input type="hidden" name="islem_tipi" value="yedek_ekle">
+                    
+                    <!-- Hazırlanma Tarihi -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Hazırlanma Tarihi</label>
+                        <input type="date" name="islem_tarihi" value="{{ bugun }}" required class="w-full border-2 border-gray-100 p-4 rounded-xl text-gray-800 font-black outline-none focus:border-blue-500 bg-gray-50 text-center">
+                    </div>
+
+                    <!-- Yemek Adı -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Yemek Adı (Reçeteli)</label>
+                        <input type="text" name="yemek_adi" list="tumYemekler" required class="w-full border-2 border-gray-100 p-4 rounded-xl text-gray-800 font-black outline-none focus:border-blue-500 bg-gray-50">
+                        <datalist id="tumYemekler">{% for ty in tum_yemekler %}<option value="{{ ty.yemek_adi }}">{% endfor %}</datalist>
+                    </div>
+                    
+                    <!-- Porsiyon -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Üretilen Porsiyon</label>
+                        <input type="number" name="porsiyon" required class="w-full border-2 border-gray-100 p-4 rounded-xl text-blue-600 font-black text-3xl outline-none focus:border-blue-500 bg-gray-50 text-center">
+                    </div>
+                    
+                    <button class="w-full bg-blue-600 text-white font-black py-4 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200 tracking-widest">DEPODAN DÜŞ & STOKLA</button>
+                </form>
+            </div>
+
+            <!-- MEVCUT DONDURUCU LİSTESİ -->
+            <div class="lg:col-span-2 bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
+                <div class="bg-gray-800 p-6">
+                    <h3 class="text-white font-black uppercase tracking-widest text-sm">Mevcut Dondurucu Envanteri</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left whitespace-nowrap">
+                        <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] border-b">
+                            <tr>
+                                <th class="p-5">Yemek Adı</th>
+                                <th class="p-5 text-center">Hazır Stok</th>
+                                <th class="p-5 text-right">Stoktan Düş / Kullan</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for y in yedekler %}
+                            <tr class="hover:bg-blue-50 transition">
+                                <td class="p-5 font-black text-gray-800 text-lg">{{ y.yemek_adi }}</td>
+                                <td class="p-5 text-center">
+                                    <span class="bg-blue-100 text-blue-700 font-black px-4 py-2 rounded-lg text-xl border border-blue-200">{{ y.porsiyon }}</span>
+                                </td>
+                                <td class="p-5 text-right flex justify-end items-center gap-2">
+                                    <form action="/yedek-uretim" method="POST" class="m-0 flex gap-2 items-center">
+                                        <input type="hidden" name="islem_tipi" value="yedek_dus">
+                                        <input type="hidden" name="yemek_adi" value="{{ y.yemek_adi }}">
+                                        <input type="number" name="dusulecek_porsiyon" max="{{ y.porsiyon }}" placeholder="Miktar" required class="border-2 border-gray-200 p-2 w-24 rounded-lg font-bold text-center outline-none focus:border-blue-500">
+                                        <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-black transition shadow-sm">Tüket</button>
+                                    </form>
+                                    <form action="/yedek-uretim" method="POST" class="m-0" onsubmit="return confirm('Silinsin mi?');">
+                                        <input type="hidden" name="islem_tipi" value="yedek_sil"><input type="hidden" name="yedek_id" value="{{ y.id }}">
+                                        <button type="submit" class="text-red-400 hover:text-red-600 font-bold text-xs bg-red-50 p-3 rounded-lg border border-red-100 transition">🗑️</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="p-10 text-center text-gray-400 font-bold">Dondurucuda henüz hazır yemek stoklanmamış.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

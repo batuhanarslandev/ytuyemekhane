@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yemekhane | Sisteme Giriş</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen font-sans">
+
+    <div class="bg-white p-10 rounded-[2rem] shadow-2xl border border-gray-100 w-full max-w-md">
+        <div class="text-center mb-8">
+            <span class="text-5xl block mb-4">🔐</span>
+            <h1 class="text-3xl font-black text-gray-800 tracking-tight">Yemekhane ERP</h1>
+            <p class="text-gray-500 font-bold text-sm mt-2">Lütfen yetkili hesabınızla giriş yapın.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="p-4 mb-6 rounded-xl font-bold shadow-sm {% if category == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="/login" method="POST" class="space-y-5">
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Kullanıcı Adı</label>
+                <input type="text" name="kullanici_adi" required class="w-full border-2 border-gray-200 p-4 rounded-xl font-bold text-gray-800 outline-none focus:border-blue-500 bg-gray-50 transition shadow-inner" placeholder="örn: diyetisyen">
+            </div>
+            
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Şifre</label>
+                <input type="password" name="sifre" required class="w-full border-2 border-gray-200 p-4 rounded-xl font-bold text-gray-800 outline-none focus:border-blue-500 bg-gray-50 transition shadow-inner" placeholder="••••">
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl hover:bg-blue-700 transition shadow-lg text-sm uppercase tracking-widest mt-4">Sisteme Giriş Yap</button>
+        </form>
+        
+        <p class="text-center text-xs font-bold text-gray-400 mt-8">Yetkilendirme ve Erişim Kontrolü Aktif</p>
+    </div>
+
+</body>
+</html>

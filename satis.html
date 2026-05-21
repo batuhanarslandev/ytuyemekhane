@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yemekhane | Finans & Etkinlik</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px;}
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f3f4f6; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px;}
+        @media (max-width: 768px) { #main-content-area { margin-left: 0 !important; } }
+        /* 🚨 TABLO AÇILIR MENÜ ALANI İÇİN ÖZEL ÇÖZÜM */
+        .table-container { min-height: 400px; padding-bottom: 150px; }
+    </style>
+    <script>
+        function openTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('bg-white', 'border-emerald-500', 'text-emerald-600', 'shadow-sm'));
+            document.getElementById(tabName).classList.remove('hidden');
+            document.getElementById('btn-' + tabName).classList.add('bg-white', 'border-emerald-500', 'text-emerald-600', 'shadow-sm');
+            localStorage.setItem('satisSekme', tabName);
+        }
+        document.addEventListener("DOMContentLoaded", () => openTab(localStorage.getItem('satisSekme') || 'tab-satis'));
+
+        function openTransferModal(id, name, date, campus, plannedCount) {
+            document.getElementById('m-etkinlik-id').value = id;
+            document.getElementById('m-grup-adi').value = name;
+            document.getElementById('m-tarih').value = date;
+            document.getElementById('m-kampus').value = campus;
+            document.getElementById('m-display-name').innerText = name;
+            document.getElementById('m-display-info').innerText = date + " | Planlanan: " + plannedCount + " Kişi";
+            
+            window.currentModalDate = date; 
+            document.getElementById('modal-rows').innerHTML = createRowHtml(date);
+            document.getElementById('transferModal').classList.remove('hidden');
+            document.getElementById('transferModal').classList.add('flex');
+        }
+
+        function createRowHtml(defDate = "") {
+            return `
+                <div class="grid grid-cols-4 gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100 relative group items-end">
+                    <div>
+                        <label class="block text-[9px] font-black text-gray-400 mb-1 uppercase">Tarih</label>
+                        <input type="date" name="tarih_satir[]" value="${defDate}" required class="w-full border border-gray-200 p-2 rounded-lg text-[10px] font-bold outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black text-gray-400 mb-1 uppercase">Öğün</label>
+                        <select name="ogun[]" class="w-full border border-gray-200 p-2 rounded-lg text-[10px] font-bold outline-none">
+                            <option value="Öğle Yemeği">Öğle</option><option value="Akşam Yemeği">Akşam</option><option value="Diğer">Diğer</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black text-gray-400 mb-1 uppercase">Kişi</label>
+                        <input type="number" name="kisi_sayisi[]" required min="1" class="w-full border border-gray-200 p-2 rounded-lg text-[10px] font-black text-center outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black text-gray-400 mb-1 uppercase">Tarife</label>
+                        <select name="tarife[]" class="w-full border border-gray-200 p-2 rounded-lg text-[10px] font-black text-emerald-600 outline-none">
+                            <option value="50">50 TL</option><option value="70">70 TL</option><option value="300">300 TL</option><option value="0">0 TL</option>
+                        </select>
+                    </div>
+                </div>`;
+        }
+
+        function addRow() {
+            const container = document.getElementById('modal-rows');
+            container.insertAdjacentHTML('beforeend', createRowHtml(window.currentModalDate || ''));
+        }
+
+        function closeModal() {
+            document.getElementById('transferModal').classList.add('hidden');
+            document.getElementById('transferModal').classList.remove('flex');
+        }
+
+        function openStatusModal(id, tahsilat, firma) {
+            document.getElementById('s-satis-id').value = id;
+            document.getElementById('s-tahsilat-select').value = tahsilat;
+            document.getElementById('s-firma-select').value = firma;
+            document.getElementById('statusModal').classList.remove('hidden');
+            document.getElementById('statusModal').classList.add('flex');
+        }
+
+        function closeStatusModal() {
+            document.getElementById('statusModal').classList.add('hidden');
+            document.getElementById('statusModal').classList.remove('flex');
+        }
+    </script>
+</head>
+<body class="bg-gray-50 flex min-h-screen font-sans overflow-x-hidden">
+
+    {% include 'sidebar.html' %}
+
+    <div id="main-content-area" class="ml-64 flex-1 min-w-0 pb-24 md:pb-0 transition-all duration-300">
+        
+        <div class="p-6 md:p-10 pb-0">
+            {% include 'topbar.html' %}
+            <div class="mb-8 border-b border-gray-200 pb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                <div>
+                    <h1 class="text-3xl font-black text-gray-800 tracking-tight">💰 Finans & Etkinlik Paneli</h1>
+                    <p class="text-gray-500 font-bold mt-2">Etkinlik planlama ve fatura / tahsilat takibi.</p>
+                </div>
+                <form action="/satis" method="GET" class="flex gap-2 bg-white p-2 rounded-xl shadow-sm border border-gray-100 w-full md:w-auto">
+                    <input type="date" name="tarih" value="{{ secilen_tarih }}" class="flex-1 border-none rounded-lg p-2 font-bold text-sm bg-gray-50 outline-none" onchange="this.form.submit()">
+                </form>
+            </div>
+        </div>
+
+        <div class="px-6 md:px-10">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="p-4 mb-6 rounded-xl font-bold shadow-sm {% if category == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <div class="flex space-x-1 md:space-x-2 mb-8 border-b border-gray-200 overflow-x-auto pb-1 custom-scrollbar">
+                <button id="btn-tab-satis" onclick="openTab('tab-satis')" class="tab-btn whitespace-nowrap p-4 font-black border-t-4 border-transparent transition text-gray-400 text-xs tracking-widest rounded-t-xl uppercase">💵 Satış / Tahsilat</button>
+                <button id="btn-tab-etkinlik" onclick="openTab('tab-etkinlik')" class="tab-btn whitespace-nowrap p-4 font-black border-t-4 border-transparent transition text-gray-400 text-xs tracking-widest rounded-t-xl uppercase">🎉 Etkinlik Planla</button>
+                <button id="btn-tab-muhasebe" onclick="openTab('tab-muhasebe')" class="tab-btn whitespace-nowrap p-4 font-black border-t-4 border-transparent transition text-gray-400 text-xs tracking-widest rounded-t-xl uppercase">📈 Aylık Bilanço</button>
+            </div>
+
+            <div id="tab-satis" class="tab-content hidden space-y-8">
+                <div class="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-emerald-100 border-l-[12px] border-l-emerald-500">
+                    <h3 class="text-xl font-black text-gray-800 mb-6 flex items-center gap-2">➕ Satış / Gerçekleşen Kayıt Ekle</h3>
+                    <form action="/satis" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-5 items-end">
+                        <input type="hidden" name="islem_tipi" value="dis_paydas_ekle">
+                        <input type="hidden" name="islem_tarihi" value="{{ secilen_tarih }}">
+                        
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2">Kampüs / Yemekhane</label>
+                            <select name="kampus" required class="w-full border-2 border-gray-100 p-3.5 rounded-xl font-bold bg-gray-50 focus:border-emerald-400 outline-none text-sm">
+                                <option value="Davutpaşa Merkez">Davutpaşa Merkez Yemekhane</option><option value="Davutpaşa Butik">Davutpaşa Butik Yemekhane</option><option value="Beşiktaş">Beşiktaş Yemekhane</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2">Grup / Kurum Adı</label>
+                            <input type="text" name="adi" placeholder="Örn: X Firması Heyeti" required class="w-full border-2 border-gray-100 p-3.5 rounded-xl font-bold bg-gray-50 focus:border-emerald-400 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2">Fiyat Tipi</label>
+                            <select name="tarife[]" class="w-full border-2 border-gray-100 p-3.5 rounded-xl font-black bg-white text-emerald-600 focus:border-emerald-400 outline-none text-sm">
+                                <option value="50">50 TL (Öğrenci)</option><option value="70">70 TL (Akademik)</option><option value="300">300 TL (Dış Firma)</option><option value="0">0 TL (İkram)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2">Kişi Sayısı</label>
+                            <input type="number" name="kisi_sayisi[]" required min="1" class="w-full border-2 border-gray-100 p-3.5 rounded-xl font-black bg-gray-50 text-center focus:border-emerald-400 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2">Öğün</label>
+                            <select name="ogun[]" class="w-full border-2 border-gray-100 p-3.5 rounded-xl font-bold bg-gray-50 focus:border-emerald-400 outline-none text-sm">
+                                <option value="Öğle Yemeği">Öğle Yemeği</option><option value="Akşam Yemeği">Akşam Yemeği</option><option value="Diğer">Diğer</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-blue-400 uppercase mb-2">Kurumdan Tahsilat</label>
+                            <select name="tahsilat_durumu" class="w-full border-2 border-blue-100 p-3.5 rounded-xl font-bold bg-blue-50 focus:border-blue-400 outline-none text-sm text-blue-800">
+                                <option value="✅ Ödendi (Nakit/Pos)">✅ Ödendi (Nakit/Pos)</option>
+                                <option value="✅ Fatura Kesildi / Ödendi">✅ Fatura Kesildi / Ödendi</option>
+                                <option value="⏳ Fatura Kesildi / Ödeme Bekliyor">⏳ Fatura Kesildi / Bekliyor</option>
+                                <option value="🏛️ Vakıf Ödeyecek (Bekliyor)">🏛️ Vakıf Ödeyecek (Bekliyor)</option>
+                                <option value="✅ Vakıf Tarafından Ödendi">✅ Vakıf Tarafından Ödendi</option>
+                                <option value="🎁 Tahsilat Yok (İkram)">🎁 Tahsilat Yok (İkram)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-purple-400 uppercase mb-2">Yemek Firmasına Ödeme</label>
+                            <select name="firma_odeme_durumu" class="w-full border-2 border-purple-100 p-3.5 rounded-xl font-bold bg-purple-50 focus:border-purple-400 outline-none text-sm text-purple-800">
+                                <option value="⏳ Hak Edişe Eklenecek (Bekliyor)">⏳ Hak Edişe Eklenecek</option>
+                                <option value="✅ Firmaya Ödendi">✅ Firmaya Ödendi</option>
+                                <option value="❌ Firmaya Ödeme Yok (Kendi Stoğumuz)">❌ Firmaya Ödeme Yok</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button type="submit" class="w-full bg-emerald-600 text-white font-black py-4 rounded-xl hover:bg-emerald-700 transition shadow-lg text-xs uppercase tracking-widest">Sisteme İşle</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="bg-gray-900 p-6 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-white font-black text-sm uppercase tracking-widest">📋 Aktif Operasyon & Açık Hesap Takibi</h3>
+                            <p class="text-gray-400 text-[9px] font-bold uppercase mt-1">Sadece tahsilatı veya ödemesi bekleyen hesaplar burada listelenir.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="p-0 overflow-x-auto w-full table-container">
+                        <table class="w-full text-left text-sm whitespace-nowrap min-w-[1000px]">
+                            <thead class="text-gray-400 bg-gray-50 border-b border-gray-100 uppercase text-[10px] tracking-widest">
+                                <tr>
+                                    <th class="p-5">Etkinlik & Kırılım Detayı</th>
+                                    <th class="p-5 text-center">Toplam Tutar</th>
+                                    <th class="p-5 text-center bg-blue-50/50">Finans ve Tahsilat Durumu</th>
+                                    <th class="p-5 text-right">Sil</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-50">
+                                {% for d in dis_paydaslar %}
+                                {% set is_t_ok = '✅' in d.tahsilat_durumu or '🎁' in d.tahsilat_durumu %}
+                                {% set is_f_ok = '✅' in d.firma_odeme_durumu or '❌' in d.firma_odeme_durumu %}
+                                <tr class="hover:bg-gray-50 transition {% if loop.index > 5 %}satis-gizli hidden{% endif %}">
+                                    <td class="p-5">
+                                        <div class="font-black text-gray-800 text-base mb-1">{{ d.adi }}</div>
+                                        <div class="flex items-center gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">
+                                            <span class="bg-gray-100 px-2 py-1 rounded">{{ d.kampus }}</span>
+                                            <span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded">{{ d.ogun }}</span>
+                                            <span class="bg-blue-50 text-blue-600 px-2 py-1 rounded">Top: {{ d.kisi_sayisi }} Kişi</span>
+                                        </div>
+                                        {% if d.odeme_yontemi and d.odeme_yontemi != '-' %}
+                                        <div class="text-[9px] text-gray-500 font-bold max-w-sm whitespace-normal break-words bg-white p-2 rounded border border-gray-100">
+                                            <span class="text-emerald-600">Dağılım:</span> {{ d.odeme_yontemi }}
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-5 text-center">
+                                        <span class="font-black text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-100 block whitespace-nowrap">{{ "%.2f"|format(d.toplam_tutar) }} ₺</span>
+                                    </td>
+                                    
+                                    <td class="p-5 text-center bg-blue-50/10">
+                                        {% set is_vakif = '🏛️' in d.tahsilat_durumu %}
+                                        <button type="button" onclick="openStatusModal('{{ d.id }}', '{{ d.tahsilat_durumu }}', '{{ d.firma_odeme_durumu }}')" 
+                                            class="flex flex-col gap-1.5 w-48 mx-auto p-3 rounded-xl border-2 transition text-left group shadow-sm hover:shadow-md
+                                            {% if is_vakif %} bg-blue-50 border-blue-200 hover:border-blue-400
+                                            {% elif is_t_ok and is_f_ok %} bg-green-50 border-green-200 hover:border-green-400
+                                            {% elif is_t_ok %} bg-yellow-50 border-yellow-200 hover:border-yellow-400
+                                            {% else %} bg-red-50 border-red-200 hover:border-red-400 {% endif %}">
+                                            
+                                            <div class="text-[9px] font-black uppercase tracking-widest mb-1 flex justify-between items-center
+                                                {% if is_vakif %} text-blue-500 group-hover:text-blue-700
+                                                {% elif is_t_ok and is_f_ok %} text-green-500 group-hover:text-green-700
+                                                {% elif is_t_ok %} text-yellow-600 group-hover:text-yellow-800
+                                                {% else %} text-red-500 group-hover:text-red-700 {% endif %}">
+                                                <span>Finans Durumu</span>
+                                                <span class="p-1 rounded bg-white/50">⚙️</span>
+                                            </div>
+                                            <div class="text-[10px] font-bold truncate {% if is_vakif %}text-blue-700{% else %}text-gray-700{% endif %}" title="{{ d.tahsilat_durumu }}">
+                                                💰 {{ d.tahsilat_durumu }}
+                                            </div>
+                                            <div class="text-[10px] font-bold truncate text-gray-700" title="{{ d.firma_odeme_durumu }}">
+                                                🏢 {{ d.firma_odeme_durumu }}
+                                            </div>
+                                        </button>
+                                    </td>
+                                    
+                                    <td class="p-5 text-right">
+                                        <button type="button" onclick="sessizSil(this, '{{ d.id }}', 'dis_paydas_sil')" class="text-gray-400 hover:text-red-500 font-bold text-xl p-2 rounded-xl transition">🗑️</button>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="4" class="p-10 text-center font-bold text-gray-400">Bu güne ait bir satış kaydı bulunmuyor.</td></tr>
+                                {% endfor %}
+
+                                {% if dis_paydaslar|length > 5 %}
+                                <tr id="satis-show-more">
+                                    <td colspan="4" class="p-4 text-center">
+                                        <button type="button" onclick="document.querySelectorAll('.satis-gizli').forEach(el => el.classList.remove('hidden')); this.closest('tr').remove();" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-black text-[10px] px-6 py-3 rounded-xl uppercase tracking-widest transition shadow-sm">
+                                            Daha Fazlasını Gör (Toplam {{ dis_paydaslar|length }} Kayıt) ⬇️
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-etkinlik" class="tab-content hidden space-y-8">
+                <div class="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-blue-100 border-l-[12px] border-l-blue-500">
+                    <h3 class="text-xl font-black text-gray-800 mb-6 flex items-center gap-2">📅 Çok Günlü Organizasyon Planla</h3>
+                    <form action="/satis" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-5 items-end" onsubmit="localStorage.setItem('satisSekme', 'tab-etkinlik');">
+                        <input type="hidden" name="islem_tipi" value="etkinlik_ekle">
+                        
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2">Başlangıç Tarihi</label>
+                            <input type="date" name="tarih" required class="w-full border-2 border-gray-100 p-3.5 rounded-xl font-bold bg-gray-50 focus:border-blue-400 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2">Bitiş Tarihi (Opsiyonel)</label>
+                            <input type="date" name="bitis_tarihi" class="w-full border-2 border-gray-100 p-3.5 rounded-xl font-bold bg-gray-50 focus:border-blue-400 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2">Kampüs Seçimi</label>
+                            <select name="kampus" class="w-full border-2 border-gray-100 p-3.5 rounded-xl font-bold bg-gray-50 focus:border-blue-400 outline-none text-sm">
+                                <option value="Davutpaşa Merkez">Davutpaşa Merkez</option><option value="Davutpaşa Butik">Davutpaşa Butik</option><option value="Beşiktaş">Beşiktaş</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2">Öğün (Planlanan)</label>
+                            <select name="ogun" class="w-full border-2 border-gray-100 p-3.5 rounded-xl font-bold bg-gray-50 focus:border-blue-400 outline-none text-sm">
+                                <option value="Öğle Yemeği">Öğle Yemeği</option><option value="Akşam Yemeği">Akşam Yemeği</option><option value="Diğer">Diğer</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2">Etkinlik / Kafile Adı</label>
+                            <input type="text" name="adi" placeholder="Örn: 2026 Bahar Şenliği Yemekleri" required class="w-full border-2 border-gray-100 p-3.5 rounded-xl font-bold bg-gray-50 focus:border-blue-400 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase mb-2">Tahmini Kişi Sayısı</label>
+                            <input type="number" name="kisi_sayisi" required class="w-full border-2 border-gray-100 p-3.5 rounded-xl font-black bg-gray-50 text-center focus:border-blue-400 outline-none text-sm">
+                        </div>
+                        <div class="md:col-span-4">
+                            <button type="submit" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl hover:bg-blue-700 transition shadow-lg text-xs uppercase tracking-widest">Planı Sisteme ve Ajandaya İşle</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="bg-gray-800 p-6 flex justify-between items-center">
+                        <h3 class="text-white font-black text-sm uppercase tracking-widest">📋 Tüm Planlanmış Etkinlikler</h3>
+                    </div>
+                    
+                    <div class="p-0 overflow-x-auto w-full table-container">
+                        <table class="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
+                            <thead class="text-gray-400 bg-gray-50 border-b border-gray-100 uppercase text-[10px] tracking-widest">
+                                <tr><th class="p-5">Tarih Aralığı</th><th class="p-5">Grup / Kafile Adı</th><th class="p-5 text-center">Planlanan</th><th class="p-5 text-center">Durum</th><th class="p-5 text-right">Aksiyon (Gerçekleşme Durumu)</th></tr>
+                            </thead>
+                            
+                            <tbody class="divide-y divide-gray-50">
+                                {% for e in etkinlikler %}
+                                <tr class="hover:bg-blue-50/30 transition {% if loop.index > 5 %}etkinlik-gizli hidden{% endif %}">
+                                    <td class="p-5 font-black text-gray-800">{{ e.tarih }} {% if e.bitis_tarihi %} <br> <span class="text-[10px] text-gray-400 uppercase block mt-1">Bitiş: {{ e.bitis_tarihi }}</span> {% endif %}</td>
+                                    <td class="p-5">
+                                        <span class="block font-black text-blue-700 text-lg">{{ e.adi }}</span>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span class="text-[9px] bg-gray-100 px-2 py-1 rounded text-gray-500 font-bold uppercase tracking-widest">{{ e.kampus }}</span>
+                                            <span class="text-[9px] bg-blue-50 px-2 py-1 rounded text-blue-500 font-bold uppercase tracking-widest">{{ e.ogun }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-5 text-center font-black text-gray-700 text-lg">{{ e.kisi_sayisi }} <span class="text-xs text-gray-400 font-bold">Kişi</span></td>
+                                    <td class="p-5 text-center">
+                                        {% if e.durum == 'Planlandı' %}
+                                            <span class="bg-orange-100 text-orange-700 font-black px-3 py-1.5 rounded-lg text-[9px] md:text-[10px] uppercase border border-orange-200">⏳ Planlandı Bekliyor</span>
+                                        {% else %}
+                                            <span class="bg-emerald-100 text-emerald-700 font-black px-3 py-1.5 rounded-lg text-[9px] md:text-[10px] uppercase border border-emerald-200 shadow-sm">✅ Gerçekleşti (Ödendi)</span>
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td class="p-5 text-right">
+                                        <div class="flex items-center justify-end gap-1.5">
+                                            {% if e.durum == 'Planlandı' %}
+                                            <button onclick="openTransferModal('{{ e.id }}', '{{ e.adi }}', '{{ e.tarih }}', '{{ e.kampus }}', '{{ e.kisi_sayisi }}')" 
+                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-3 py-2 rounded-lg transition shadow-sm text-[9px] border border-emerald-700 uppercase tracking-widest whitespace-nowrap">
+                                                ✅ Ödemeye Aktar
+                                            </button>
+                                            {% endif %}
+                                            
+                                            <form action="/satis" method="POST" class="m-0" onsubmit="return confirm('Bu etkinliği tamamen iptal edip Ajanda\'dan silmek istediğinize emin misiniz?');">
+                                                <input type="hidden" name="islem_tipi" value="etkinlik_sil"><input type="hidden" name="etkinlik_id" value="{{ e.id }}">
+                                                <button type="submit" class="text-red-500 hover:text-white hover:bg-red-500 font-bold text-[9px] bg-red-50 px-3 py-2 rounded-lg border border-red-100 transition shadow-sm uppercase tracking-widest whitespace-nowrap">❌ İptal</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="5" class="p-10 text-center font-bold text-gray-400">Planlanan bir gelecek etkinliği bulunmuyor.</td></tr>
+                                {% endfor %}
+
+                                {% if etkinlikler|length > 5 %}
+                                <tr id="etkinlik-show-more">
+                                    <td colspan="5" class="p-4 text-center">
+                                        <button type="button" onclick="document.querySelectorAll('.etkinlik-gizli').forEach(el => el.classList.remove('hidden')); this.closest('tr').remove();" class="bg-blue-50 hover:bg-blue-100 text-blue-600 font-black text-[10px] px-6 py-3 rounded-xl uppercase tracking-widest transition shadow-sm border border-blue-100">
+                                            Daha Fazlasını Gör (Toplam {{ etkinlikler|length }} Etkinlik) ⬇️
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-muhasebe" class="tab-content hidden space-y-6">
+                <div class="bg-gray-900 p-6 rounded-[2rem] shadow-xl border border-gray-800">
+                    <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end" onsubmit="localStorage.setItem('satisSekme', 'tab-muhasebe');">
+                        <input type="hidden" name="tarih" value="{{ secilen_tarih }}">
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Yemekhane Filtresi</label>
+                            <select name="f_kampus" class="w-full bg-gray-800 border-none p-3 rounded-xl text-white text-xs font-bold outline-none ring-1 ring-gray-700 focus:ring-emerald-500">
+                                <option value="Tümü">Tümü</option>
+                                <option value="Davutpaşa Merkez" {% if f_kampus == 'Davutpaşa Merkez' %}selected{% endif %}>Davutpaşa Merkez</option>
+                                <option value="Davutpaşa Butik" {% if f_kampus == 'Davutpaşa Butik' %}selected{% endif %}>Davutpaşa Butik</option>
+                                <option value="Beşiktaş" {% if f_kampus == 'Beşiktaş' %}selected{% endif %}>Beşiktaş</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Fiyat Tipi Filtresi</label>
+                            <select name="f_fiyat" class="w-full bg-gray-800 border-none p-3 rounded-xl text-white text-xs font-bold outline-none ring-1 ring-gray-700 focus:ring-emerald-500">
+                                <option value="Tümü">Tümü</option>
+                                <option value="0.0" {% if f_fiyat == '0.0' %}selected{% endif %}>0 TL (İkram)</option>
+                                <option value="50.0" {% if f_fiyat == '50.0' %}selected{% endif %}>50 TL (Öğrenci)</option>
+                                <option value="70.0" {% if f_fiyat == '70.0' %}selected{% endif %}>70 TL (Akademik)</option>
+                                <option value="300.0" {% if f_fiyat == '300.0' %}selected{% endif %}>300 TL (Dış Firma)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-500 uppercase mb-2">Tahsilat Durumu</label>
+                            <div class="text-[9px] text-emerald-500 font-bold mb-1 uppercase tracking-tighter">* Bilançoda sadece tam kapanmış hesaplar (✅) hesaplanır.</div>
+                            <select name="f_tahsilat" class="w-full bg-gray-800 border-none p-3 rounded-xl text-white text-xs font-bold outline-none ring-1 ring-gray-700 focus:ring-emerald-500">
+                                <option value="Tümü">Tümü</option>
+                                <option value="Vakıf" {% if f_tahsilat == 'Vakıf' %}selected{% endif %}>Sadece Vakıf Ödeyecekler</option>
+                                <option value="Ödendi" {% if f_tahsilat == 'Ödendi' %}selected{% endif %}>Ödemesi Alınanlar</option>
+                                <option value="Bekliyor" {% if f_tahsilat == 'Bekliyor' %}selected{% endif %}>Fatura Kesilen/Bekleyenler</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="bg-emerald-600 text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-emerald-500 transition">Listeyi Güncelle</button>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-gray-50 border-b border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                <tr>
+                                    <th class="p-5">Tarih</th>
+                                    <th class="p-5">Kampüs / Yemekhane</th>
+                                    <th class="p-5">Grup Adı</th>
+                                    <th class="p-5 text-center">Kişi</th>
+                                    <th class="p-5 text-center">Tarife</th>
+                                    <th class="p-5 text-right">Toplam Tutar</th>
+                                    <th class="p-5 text-center">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-50">
+                                {% set toplam_aylik = namespace(value=0) %}
+                                {% for g in gelenler_aylik %}
+                                <tr class="hover:bg-gray-50/50 transition">
+                                    <td class="p-5 font-bold text-gray-500 text-xs">{{ g.tarih }}</td>
+                                    <td class="p-5"><span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-[9px] font-black uppercase whitespace-nowrap">{{ g.kampus }}</span></td>
+                                    <td class="p-5 font-black text-gray-800 text-xs">{{ g.adi }}</td>
+                                    <td class="p-5 text-center font-black text-xs">{{ g.kisi_sayisi }}</td>
+                                    <td class="p-5 text-center text-emerald-600 font-black text-xs whitespace-nowrap">{{ g.tarife }}</td>
+                                    <td class="p-5 text-right font-black text-gray-800 text-xs whitespace-nowrap">{{ "%.2f"|format(g.toplam_tutar) }} ₺</td>
+                                    <td class="p-5 text-center">
+                                        <button type="button" onclick="sessizSil(this, '{{ g.id }}', 'dis_paydas_sil')" class="bg-red-50 text-red-500 hover:text-white hover:bg-red-500 border border-red-100 transition-colors text-lg px-3 py-1.5 rounded-lg shadow-sm">🗑️</button>
+                                    </td>
+                                </tr>
+                                {% set toplam_aylik.value = toplam_aylik.value + g.toplam_tutar %}
+                                {% else %}
+                                <tr><td colspan="7" class="p-10 text-center text-gray-400 font-bold italic">Seçilen kriterlere uygun kayıt bulunamadı.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="bg-emerald-50">
+                                <tr>
+                                    <td colspan="5" class="p-5 text-right font-black text-emerald-800 uppercase tracking-widest text-xs">Filtrelenmiş Toplam Ciro:</td>
+                                    <td colspan="2" class="p-5 text-center font-black text-emerald-700 text-xl">{{ "%.2f"|format(toplam_aylik.value) }} ₺</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="transferModal" class="hidden fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-[100] items-center justify-center p-4">
+        <div class="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl border-4 border-emerald-500 overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div class="bg-emerald-500 p-6 flex justify-between items-center text-white">
+                <div>
+                    <h3 id="m-display-name" class="text-xl font-black uppercase tracking-tight">Grup Adı</h3>
+                    <p id="m-display-info" class="text-xs font-bold opacity-90 uppercase"></p>
+                </div>
+                <button onclick="closeModal()" class="text-3xl hover:rotate-90 transition transform">✕</button>
+            </div>
+            
+            <form action="/satis" method="POST" class="p-8 space-y-6">
+                <input type="hidden" name="islem_tipi" value="dis_paydas_ekle">
+                <input type="hidden" name="bagli_etkinlik_id" id="m-etkinlik-id">
+                <input type="hidden" name="islem_tarihi" id="m-tarih">
+                <input type="hidden" name="adi" id="m-grup-adi">
+                <input type="hidden" name="kampus" id="m-kampus">
+                <input type="hidden" name="turu" value="Etkinlik (Planlı)">
+
+                <div class="flex justify-between items-center">
+                    <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">📋 Gerçekleşen Dağılımı (Öğün & Fiyat)</h4>
+                    <button type="button" onclick="addRow()" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-[10px] font-black hover:bg-emerald-200 transition">➕ YENİ SATIR EKLE</button>
+                </div>
+
+                <div id="modal-rows" class="space-y-3 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                    </div>
+
+                <div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                    <div>
+                        <label class="block text-[9px] font-black text-blue-500 uppercase mb-2">Kurumdan Tahsilat</label>
+                        <select name="tahsilat_durumu" class="w-full border-2 border-blue-100 p-3 rounded-xl text-xs font-black bg-blue-50 text-blue-800 outline-none">
+                            <option value="⏳ Fatura Kesildi / Ödeme Bekliyor">⏳ Fatura Kesildi / Bekliyor</option>
+                            <option value="✅ Fatura Kesildi / Ödendi">✅ Fatura Kesildi / Ödendi</option>
+                            <option value="✅ Ödendi (Nakit/Pos)">✅ Ödendi (Nakit/Pos)</option>
+                            <option value="🏛️ Vakıf Ödeyecek (Bekliyor)">🏛️ Vakıf Ödeyecek (Bekliyor)</option>
+                            <option value="✅ Vakıf Tarafından Ödendi">✅ Vakıf Tarafından Ödendi</option>
+                            <option value="🎁 Tahsilat Yok (İkram)">🎁 Tahsilat Yok (İkram)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[9px] font-black text-purple-500 uppercase mb-2">Firmaya Hak Ediş</label>
+                        <select name="firma_odeme_durumu" class="w-full border-2 border-purple-100 p-3 rounded-xl text-xs font-black bg-purple-50 text-purple-800 outline-none">
+                            <option value="⏳ Hak Edişe Eklenecek (Bekliyor)">⏳ Hak Edişe Eklenecek</option>
+                            <option value="❌ Firmaya Ödeme Yok (Kendi Stoğumuz)">❌ Bizim Stok (Ödeme Yok)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-gray-900 text-white font-black py-5 rounded-2xl hover:bg-black transition shadow-xl text-xs uppercase tracking-widest">Hesabı Kapat ve Ödemelere Aktar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="statusModal" class="hidden fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-[100] items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl border-4 border-blue-500 overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div class="bg-blue-500 p-5 flex justify-between items-center text-white">
+                <h3 class="text-lg font-black uppercase tracking-tight">⚙️ Durum Güncelle</h3>
+                <button onclick="closeStatusModal()" class="text-2xl hover:rotate-90 transition transform">✕</button>
+            </div>
+            
+            <form action="/satis" method="POST" class="p-6 space-y-5">
+                <input type="hidden" name="islem_tipi" value="durum_guncelle">
+                <input type="hidden" name="satis_id" id="s-satis-id">
+                <input type="hidden" name="islem_tarihi" value="{{ secilen_tarih }}">
+
+                <div>
+                    <label class="block text-[10px] font-black text-blue-500 uppercase mb-2">Kurumdan Tahsilat Durumu</label>
+                    <select name="tahsilat_durumu" id="s-tahsilat-select" class="w-full border-2 border-blue-100 p-3 rounded-xl text-xs font-black bg-blue-50 text-blue-800 outline-none focus:border-blue-400">
+                        <option value="⏳ Fatura Kesildi / Ödeme Bekliyor">⏳ Fatura Kesildi / Bekliyor</option>
+                        <option value="✅ Fatura Kesildi / Ödendi">✅ Fatura Kesildi / Ödendi</option>
+                        <option value="✅ Ödendi (Nakit/Pos)">✅ Ödendi (Nakit/Pos)</option>
+                        <option value="🏛️ Vakıf Ödeyecek (Bekliyor)">🏛️ Vakıf Ödeyecek (Bekliyor)</option>
+                        <option value="✅ Vakıf Tarafından Ödendi">✅ Vakıf Tarafından Ödendi</option>
+                        <option value="🎁 Tahsilat Yok (İkram)">🎁 Tahsilat Yok (İkram)</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] font-black text-purple-500 uppercase mb-2">Firmaya Hak Ediş Durumu</label>
+                    <select name="firma_odeme_durumu" id="s-firma-select" class="w-full border-2 border-purple-100 p-3 rounded-xl text-xs font-black bg-purple-50 text-purple-800 outline-none focus:border-purple-400">
+                        <option value="⏳ Hak Edişe Eklenecek (Bekliyor)">⏳ Hak Edişe Eklenecek (Bekliyor)</option>
+                        <option value="✅ Firmaya Ödendi">✅ Firmaya Ödendi</option>
+                        <option value="❌ Firmaya Ödeme Yok (Kendi Stoğumuz)">❌ Bizim Stok (Ödeme Yok)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl hover:bg-blue-700 transition shadow-lg text-xs uppercase tracking-widest mt-2">Güncelle ve Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function sessizSil(btnElement, kayitId, islemTipi) {
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: "Bu kayıt tamamen silinecek ve geri alınamaz!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#9ca3af',
+                confirmButtonText: 'Evet, Sil!',
+                cancelButtonText: 'Vazgeç',
+                backdrop: `rgba(0,0,0,0.4)`
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    
+                    // Arka planda sunucuya (app.py) veriyi gönderiyoruz
+                    let formData = new FormData();
+                    formData.append('islem_tipi', islemTipi);
+                    formData.append('kayit_id', kayitId);
+                    formData.append('ajax', 'true'); // Python'a sayfa yenileme diyoruz
+
+                    fetch('/satis', {
+                        method: 'POST',
+                        body: formData
+                    }).then(response => response.json())
+                      .then(data => {
+                          if(data.status === 'success') {
+                              // Sayfayı yenilemeden satırı animasyonla yok et!
+                              let row = btnElement.closest('tr');
+                              row.style.transition = "all 0.4s ease";
+                              row.style.transform = "translateX(50px)";
+                              row.style.opacity = "0";
+                              
+                              setTimeout(() => {
+                                  row.remove();
+                                  Swal.fire({
+                                      title: 'Silindi!',
+                                      text: 'Kayıt başarıyla yok edildi.',
+                                      icon: 'success',
+                                      timer: 1500,
+                                      showConfirmButton: false
+                                  });
+                              }, 400); // Animasyon bitince HTML'den sil
+                          }
+                      });
+                }
+            });
+        }
+    </script>
+</body>
+</html>

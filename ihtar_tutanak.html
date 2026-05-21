@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yemekhane | Firma İlişkileri</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        function openTab(tabName, colorClass, textClass) {
+            // Tüm içerikleri gizle
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            // Tüm buton renklerini sıfırla
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = 'tab-btn p-4 font-black border-t-4 border-transparent transition text-gray-400 text-xs sm:text-sm tracking-wide rounded-t-xl hover:bg-gray-100/50';
+            });
+            
+            // Seçileni aç ve renklendir
+            document.getElementById(tabName).classList.remove('hidden');
+            const activeBtn = document.getElementById('btn-' + tabName);
+            activeBtn.className = `tab-btn p-4 font-black border-t-4 transition tracking-wide rounded-t-xl text-xs sm:text-sm bg-white shadow-sm ${colorClass} ${textClass}`;
+            
+            localStorage.setItem('firmaSekme', tabName);
+            localStorage.setItem('firmaSekmeColor', colorClass);
+            localStorage.setItem('firmaSekmeText', textClass);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedTab = localStorage.getItem('firmaSekme') || 'tab-talepler';
+            const savedColor = localStorage.getItem('firmaSekmeColor') || 'border-purple-600';
+            const savedText = localStorage.getItem('firmaSekmeText') || 'text-purple-700';
+            openTab(savedTab, savedColor, savedText);
+        });
+        
+        function tutanakOlustur(ihtarId, firma, konu) {
+            openTab('tab-tutanaklar', 'border-gray-800', 'text-gray-800');
+            document.getElementById('bagli_ihtar_id').value = ihtarId;
+            document.getElementById('tutanak_firma').value = firma;
+            document.getElementById('tutanak_konu').value = "İhtar Sonucu Tutanak (" + konu + ")";
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px;}
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 4px;}
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px;}
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen font-sans">
+
+    {% include 'sidebar.html' %}
+
+    <div class="ml-64 flex-1 p-10 min-w-0">
+        {% include 'topbar.html' %}
+        
+        <div class="mb-8 border-b border-gray-200 pb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            <div>
+                <h1 class="text-3xl font-black text-gray-800">🤝 Firma İlişkileri Yönetimi</h1>
+                <p class="text-gray-500 font-bold mt-2">İyileştirme taleplerinden resmi ihtarlara ve tutanaklara kadar taşeron iletişimini yönetin.</p>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="p-4 mb-6 rounded-xl font-bold shadow-sm {% if category == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="flex overflow-x-auto custom-scrollbar space-x-2 mb-8 border-b border-gray-200 w-full min-w-0">
+            <button id="btn-tab-talepler" onclick="openTab('tab-talepler', 'border-purple-600', 'text-purple-700')" class="tab-btn p-4 font-black border-t-4 border-transparent transition text-gray-400 text-xs sm:text-sm tracking-wide rounded-t-xl shrink-0">💬 FİRMA TALEPLERİ (YUMUŞAK)</button>
+            <button id="btn-tab-ihtarlar" onclick="openTab('tab-ihtarlar', 'border-red-600', 'text-red-700')" class="tab-btn p-4 font-black border-t-4 border-transparent transition text-gray-400 text-xs sm:text-sm tracking-wide rounded-t-xl shrink-0">⚠️ İHTARLAR (SÜRELİ)</button>
+            <button id="btn-tab-tutanaklar" onclick="openTab('tab-tutanaklar', 'border-gray-800', 'text-gray-800')" class="tab-btn p-4 font-black border-t-4 border-transparent transition text-gray-400 text-xs sm:text-sm tracking-wide rounded-t-xl shrink-0">📝 TUTANAKLAR (KESİN CEZA)</button>
+        </div>
+
+        <div id="tab-talepler" class="tab-content hidden w-full">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <div class="lg:col-span-1 bg-white p-8 rounded-[2rem] shadow-sm border border-purple-100 border-l-8 border-l-purple-500 h-max">
+                    <h3 class="text-xl font-black text-gray-800 mb-6 flex items-center gap-2"><span>💬</span> Yeni İyileştirme Talebi</h3>
+                    <form action="/ihtar-tutanak" method="POST" class="space-y-5">
+                        <input type="hidden" name="islem_tipi" value="talep_ekle">
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Firma Adı</label>
+                            <input type="text" name="firma_adi" required placeholder="Örn: Üstün Yemekçilik" class="w-full border-2 border-gray-100 p-3 rounded-xl font-bold text-sm bg-gray-50 outline-none focus:border-purple-400">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Konu</label>
+                            <input type="text" name="konu" required placeholder="Örn: Pirinç Markası Değişimi" class="w-full border-2 border-gray-100 p-3 rounded-xl font-bold text-sm bg-gray-50 outline-none focus:border-purple-400">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Talep Detayı</label>
+                            <textarea name="detay" rows="3" placeholder="Firmaya iletilen detaylı mesaj..." class="w-full border-2 border-gray-100 p-3 rounded-xl font-bold text-sm bg-gray-50 outline-none focus:border-purple-400"></textarea>
+                        </div>
+                        <div class="bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                            <label class="block text-[10px] font-black text-purple-600 uppercase tracking-widest mb-2">📅 Ajanda Hatırlatıcısı (İsteğe Bağlı)</label>
+                            <input type="date" name="hatirlat_tarih" class="w-full border border-purple-200 p-2 rounded-lg font-bold text-sm bg-white outline-none focus:ring-2 focus:ring-purple-200 cursor-pointer text-purple-800">
+                            <p class="text-[9px] text-purple-400 mt-2 font-bold italic">*Kontrol etmek istediğiniz tarihi seçerseniz o gün ajandada sizi uyarır.</p>
+                        </div>
+                        <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-4 rounded-xl transition shadow-md text-xs uppercase tracking-widest">Talebi Kaydet</button>
+                    </form>
+                </div>
+
+                <div class="lg:col-span-2 bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[600px]">
+                    <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
+                        <h3 class="font-black text-gray-700 uppercase tracking-widest text-sm">Arşivlenmiş Talepler</h3>
+                    </div>
+                    <div class="overflow-x-auto flex-1 custom-scrollbar">
+                        <table class="w-full text-left text-sm whitespace-nowrap min-w-full">
+                            <thead class="text-gray-400 uppercase text-[10px] tracking-widest sticky top-0 bg-white shadow-sm">
+                                <tr><th class="p-5 w-48">Tarih / Firma</th><th class="p-5">Konu & Detay</th><th class="p-5 text-center">Durum</th><th class="p-5 text-right w-32">Aksiyon</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-50">
+                                {% for t in talepler %}
+                                <tr class="hover:bg-purple-50/30 transition">
+                                    <td class="p-5">
+                                        <span class="block font-black text-gray-800">{{ t.tarih }}</span>
+                                        <span class="text-[10px] font-bold text-purple-500 uppercase truncate block w-40" title="{{ t.firma_adi }}">{{ t.firma_adi }}</span>
+                                    </td>
+                                    <td class="p-5">
+                                        <span class="block font-black text-gray-700">{{ t.konu }}</span>
+                                        <p class="text-[11px] text-gray-400 font-bold whitespace-normal min-w-[200px]">{{ t.detay }}</p>
+                                        {% if t.hatirlat_tarih %}<span class="text-[9px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded font-black mt-1 inline-block">📅 Takip: {{ t.hatirlat_tarih }}</span>{% endif %}
+                                    </td>
+                                    <td class="p-5 text-center">
+                                        {% if t.durum == 'Bekliyor' %}<span class="bg-orange-100 text-orange-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase border border-orange-200 whitespace-nowrap">⏳ Bekliyor</span>
+                                        {% elif t.durum == 'Çözüldü' %}<span class="bg-green-100 text-green-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase border border-green-200 whitespace-nowrap">✅ Çözüldü</span>
+                                        {% else %}<span class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase border border-red-200 whitespace-nowrap">❌ İptal/Red</span>{% endif %}
+                                    </td>
+                                    <td class="p-5 text-right">
+                                        <div class="flex justify-end items-center gap-2">
+                                            <form action="/ihtar-tutanak" method="POST" class="m-0">
+                                                <input type="hidden" name="islem_tipi" value="talep_durum_guncelle"><input type="hidden" name="talep_id" value="{{ t.id }}">
+                                                <select name="yeni_durum" onchange="this.form.submit()" class="text-[10px] font-black bg-white border border-gray-200 rounded p-1 outline-none text-gray-600 cursor-pointer shadow-sm">
+                                                    <option value="">Durum Değiştir</option>
+                                                    <option value="Çözüldü">✅ Çözüldü</option>
+                                                    <option value="Reddedildi">❌ İptal</option>
+                                                    <option value="Bekliyor">⏳ Bekliyor</option>
+                                                </select>
+                                            </form>
+                                            <form action="/ihtar-tutanak" method="POST" class="m-0" onsubmit="return confirm('Silmek istediğinize emin misiniz?');">
+                                                <input type="hidden" name="islem_tipi" value="talep_sil"><input type="hidden" name="talep_id" value="{{ t.id }}">
+                                                <button type="submit" class="text-gray-300 hover:text-red-500 transition text-lg leading-none">×</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="4" class="p-16 text-center text-gray-400 font-bold">Kayıtlı talep bulunmuyor.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-ihtarlar" class="tab-content hidden w-full space-y-8">
+            
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-red-100 border-l-8 border-l-red-500">
+                <h3 class="text-xl font-black text-gray-800 mb-6 flex items-center gap-2"><span>⚠️</span> Yeni Resmi İhtar Başlat</h3>
+                <form action="/ihtar-tutanak" method="POST" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-end">
+                    <input type="hidden" name="islem_tipi" value="ihtar_ekle">
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Firma / Tedarikçi Adı</label>
+                        <input type="text" name="firma_adi" placeholder="Örn: İncir Kurumsal" required class="w-full border-2 border-gray-100 p-4 rounded-xl text-gray-800 font-bold outline-none focus:border-red-400 bg-gray-50 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">İhtar Konusu / Sebep</label>
+                        <input type="text" name="konu" placeholder="Örn: Şartname İhlali md..." required class="w-full border-2 border-gray-100 p-4 rounded-xl text-gray-800 font-bold outline-none focus:border-red-400 bg-gray-50 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">İhtar Veriliş Tarihi</label>
+                        <input type="date" name="ihtar_tarihi" value="{{ bugun }}" required class="w-full border-2 border-gray-100 p-4 rounded-xl text-gray-800 font-bold outline-none focus:border-red-400 bg-gray-50 cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-red-500 uppercase tracking-widest mb-2">Çözüm İçin Son Tarih (Termin)</label>
+                        <input type="date" name="son_tarih" required class="w-full border-2 border-red-200 p-4 rounded-xl text-red-700 font-black outline-none focus:border-red-500 bg-red-50 shadow-inner cursor-pointer">
+                    </div>
+                    
+                    <div class="col-span-1 md:col-span-2 xl:col-span-4">
+                        <button type="submit" class="w-full bg-red-600 text-white font-black py-4 rounded-xl hover:bg-red-700 transition shadow-sm text-sm tracking-widest uppercase">İhtarı Kaydet ve Takibe Al</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
+                    <h3 class="font-black text-gray-700 uppercase tracking-widest text-sm">Takipteki Firma İhtarları</h3>
+                </div>
+                
+                <div class="overflow-x-auto max-h-[600px] custom-scrollbar">
+                    <table class="w-full text-left whitespace-nowrap min-w-full">
+                        <thead class="bg-white text-gray-400 uppercase text-[10px] tracking-widest border-b sticky top-0 shadow-sm z-10">
+                            <tr><th class="p-6">Firma Bilgisi</th><th class="p-6">İhtar Konusu</th><th class="p-6 text-center">Tarih / Termin</th><th class="p-6 text-center">Durum</th><th class="p-6 text-right">Aksiyon</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            {% for i in ihtarlar %}
+                            <tr class="hover:bg-red-50/30 transition">
+                                <td class="p-6 font-black text-gray-800 text-base">{{ i.firma_adi }}</td>
+                                <td class="p-6 font-bold text-gray-600 text-sm whitespace-normal min-w-[200px]">{{ i.konu }}</td>
+                                <td class="p-6 text-center">
+                                    <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Verilen: {{ i.ihtar_tarihi }}</span>
+                                    <span class="block text-sm font-black mt-1 {% if i.son_tarih < bugun and i.durum == 'Bekliyor' %}text-red-600 animate-pulse{% else %}text-gray-800{% endif %}">Son: {{ i.son_tarih }}</span>
+                                </td>
+                                <td class="p-6 text-center">
+                                    {% if i.durum == 'Bekliyor' %}
+                                        {% if i.son_tarih < bugun %}
+                                            <span class="bg-red-100 text-red-700 font-black px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-widest border border-red-200">SÜRE DOLDU!</span>
+                                        {% else %}
+                                            <span class="bg-orange-100 text-orange-600 font-black px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-widest border border-orange-200">⏳ Bekliyor</span>
+                                        {% endif %}
+                                    {% elif i.durum == 'Çözüldü' %}
+                                        <span class="bg-green-100 text-green-700 font-black px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-widest border border-green-200">✅ Çözüldü</span>
+                                    {% else %}
+                                        <span class="bg-gray-800 text-white font-black px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-widest border border-gray-900 shadow-sm">📝 Tutanak Tutuldu</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-6 text-right">
+                                    <div class="flex justify-end items-center gap-2">
+                                        {% if i.durum == 'Bekliyor' %}
+                                            <form action="/ihtar-tutanak" method="POST" class="m-0">
+                                                <input type="hidden" name="islem_tipi" value="ihtar_cozuldu"><input type="hidden" name="ihtar_id" value="{{ i.id }}">
+                                                <button type="submit" class="bg-green-50 text-green-600 font-black px-3 py-2.5 rounded-xl text-[10px] uppercase tracking-widest border border-green-200 hover:bg-green-100 shadow-sm transition">✅ Çözüldü</button>
+                                            </form>
+                                            <button onclick="tutanakOlustur('{{ i.id }}', '{{ i.firma_adi }}', '{{ i.konu }}')" class="bg-gray-900 text-white font-black px-3 py-2.5 rounded-xl text-[10px] uppercase tracking-widest border border-gray-800 hover:bg-black shadow-sm transition whitespace-nowrap">📝 Tutanağa Çevir</button>
+                                        {% endif %}
+                                        <form action="/ihtar-tutanak" method="POST" class="m-0" onsubmit="return confirm('İhtarı tamamen silmek istediğinize emin misiniz?');">
+                                            <input type="hidden" name="islem_tipi" value="ihtar_sil"><input type="hidden" name="ihtar_id" value="{{ i.id }}">
+                                            <button type="submit" class="text-gray-300 hover:text-red-500 font-bold px-2 py-1 text-lg">×</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="p-16 text-center text-gray-400 font-bold">Kayıtlı bir ihtar bulunmuyor.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-tutanaklar" class="tab-content hidden w-full space-y-8">
+            
+            <div class="bg-gray-900 p-8 rounded-[2rem] shadow-xl border border-gray-800 text-white relative overflow-hidden">
+                <div class="absolute -right-10 -top-10 opacity-10 text-9xl">📝</div>
+                <h3 class="text-xl font-black mb-6 relative z-10 flex items-center gap-2"><span>📝</span> Yeni Tutanak Düzenle</h3>
+                <form action="/ihtar-tutanak" method="POST" class="space-y-6 relative z-10">
+                    <input type="hidden" name="islem_tipi" value="tutanak_ekle">
+                    <input type="hidden" name="bagli_ihtar_id" id="bagli_ihtar_id" value="">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Tutanak Tarihi</label>
+                            <input type="date" name="tarih" value="{{ bugun }}" required class="w-full bg-gray-800 border-2 border-gray-700 p-4 rounded-xl text-white font-bold outline-none focus:border-gray-500 cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Olay Yeri</label>
+                            <input type="text" name="yer" placeholder="Örn: Mutfak" required class="w-full bg-gray-800 border-2 border-gray-700 p-4 rounded-xl text-white font-bold outline-none focus:border-gray-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">İlgili Firma</label>
+                            <input type="text" name="firma_adi" id="tutanak_firma" placeholder="Firma Adı" required class="w-full bg-gray-800 border-2 border-gray-700 p-4 rounded-xl text-white font-bold outline-none focus:border-gray-500 text-sm">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 gap-6">
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Tutanak Konusu</label>
+                            <input type="text" name="konu" id="tutanak_konu" placeholder="İhlal Sebebi" required class="w-full bg-gray-800 border-2 border-gray-700 p-4 rounded-xl text-white font-bold outline-none focus:border-gray-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Olay Detayı / Rapor</label>
+                            <textarea name="detay" rows="3" placeholder="Tespit edilen durumu yazın..." required class="w-full bg-gray-800 border-2 border-gray-700 p-4 rounded-xl text-white font-bold outline-none focus:border-gray-500 text-sm"></textarea>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-white text-gray-900 font-black py-4 rounded-xl hover:bg-gray-200 transition shadow-sm text-sm tracking-widest uppercase">Tutanağı Sisteme İşle</button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-[2.5rem] shadow-sm overflow-hidden border border-gray-100">
+                <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
+                    <h3 class="font-black text-gray-700 uppercase tracking-widest text-sm">Arşivlenmiş Tutanaklar</h3>
+                </div>
+                
+                <div class="overflow-x-auto max-h-[600px] custom-scrollbar">
+                    <table class="w-full text-left whitespace-nowrap min-w-full">
+                        <thead class="bg-white text-gray-400 uppercase text-[10px] tracking-widest border-b sticky top-0 shadow-sm z-10">
+                            <tr>
+                                <th class="p-6 w-48">Tarih & Yer</th>
+                                <th class="p-6">Firma Bilgisi</th>
+                                <th class="p-6">Konu ve Detay</th>
+                                <th class="p-6 text-right w-24">Aksiyon</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            {% for t in tutanaklar %}
+                            <tr class="hover:bg-gray-50/50 transition items-start">
+                                <td class="p-6">
+                                    <span class="block font-black text-gray-800 text-base">{{ t.tarih }}</span>
+                                    <span class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">📍 {{ t.yer }}</span>
+                                </td>
+                                <td class="p-6 font-black text-gray-800 text-base">{{ t.firma_adi }}</td>
+                                <td class="p-6">
+                                    <span class="block font-black text-gray-900 text-sm mb-1 whitespace-normal min-w-[200px]">{{ t.konu }}</span>
+                                    <p class="text-xs font-bold text-gray-500 whitespace-normal min-w-[300px] leading-relaxed">{{ t.detay }}</p>
+                                </td>
+                                <td class="p-6 text-right align-top">
+                                    <form action="/ihtar-tutanak" method="POST" class="m-0" onsubmit="return confirm('Tutanağı silmek istediğinize emin misiniz?');">
+                                        <input type="hidden" name="islem_tipi" value="tutanak_sil"><input type="hidden" name="tutanak_id" value="{{ t.id }}">
+                                        <button type="submit" class="bg-white border border-gray-200 hover:border-red-200 text-gray-400 hover:text-red-500 hover:bg-red-50 font-black p-3 rounded-xl transition shadow-sm" title="Sil">🗑️</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="p-16 text-center text-gray-400 font-bold">Arşivde tutanak bulunmuyor.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

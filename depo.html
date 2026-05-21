@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yemekhane | Depo & Stok Yönetimi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px;}
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 4px;}
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px;}
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen font-sans">
+    
+    {% include 'sidebar.html' %}
+
+    <div class="ml-64 flex-1 p-10 min-w-0">
+        {% include 'topbar.html' %}
+        <div class="mb-8 border-b border-gray-200 pb-6 flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl font-black text-gray-800">📦 Depo & Anlık Stok</h1>
+                {% if session.rol == 'admin' %}
+                    <p class="text-gray-500 font-bold mt-2">Mevcut stoklarınızı denetleyin, sayım yapın ve bekleyen üretime çıkış taleplerini <b class="text-indigo-600">onaylayın.</b></p>
+                {% else %}
+                    <p class="text-gray-500 font-bold mt-2">Stok durumunu inceleyin ve üretime vereceğiniz malzemeler için çıkış talebi oluşturun.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="p-4 mb-6 rounded-xl font-bold shadow-sm {% if category == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="space-y-10 mb-10 w-full max-w-6xl mx-auto">
+            
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-indigo-100 border-l-8 border-l-indigo-500 relative z-40">
+                <h3 class="text-xl font-black text-gray-800 mb-4 flex items-center gap-2">📤 {% if session.rol == 'admin' %}Hızlı Mal Çıkışı Yap{% else %}Mal Çıkış Talebi Oluştur{% endif %}</h3>
+                
+                <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl mb-6 text-emerald-700 text-[11px] font-black uppercase tracking-widest flex items-center gap-2 shadow-sm">
+                    <span class="text-lg">👩‍🍳</span> Buradan çıkışı yapılan ürünler doğrudan "Üretim Paneli"ndeki Anlık Mutfak Deposuna aktarılır.
+                </div>
+
+                <form action="/depo" method="POST" class="space-y-4" onsubmit="return validateCikisForm(this);">
+                    <input type="hidden" name="islem_tipi" value="depo_cikis">
+                    
+                    <div class="mb-4 bg-indigo-50/40 p-5 rounded-2xl border border-indigo-100">
+                        <label class="block text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <span>🎯</span> Hedef Üretim / Kullanım Yeri (Zorunlu)
+                        </label>
+                        <select name="bagli_uretim" required class="w-full border-2 border-indigo-100 p-4 rounded-xl font-black outline-none bg-white focus:border-indigo-500 text-sm text-indigo-900 shadow-inner transition cursor-pointer">
+                            <option value="">Bu malzeme hangi yemek/işlem için çıkıyor?</option>
+                            <optgroup label="📋 Planlı Üretimler (Menüye Eklenenler)"></optgroup>
+                                {% for u in planlananlar %}
+                                <option value="{{ u.tarih }}|{{ u.ogun }}|{{ u.yemek_adi }}">📅 [{{ u.tarih }}] {{ u.ogun }} - {{ u.yemek_adi }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="⚠️ Bağımsız / İstisnai Çıkışlar">
+                                <option value="{{ bugun }}|Zayi/Fire|Çöpe Giden (Zayi)">🗑️ Zayi / Fire (Bozulan/Dökülen/Patlayan)</option>
+                                <option value="{{ bugun }}|Personel İkram|Ağırlama">☕ Personel / Misafir İkramı</option>
+                                <option value="{{ bugun }}|Genel Tüketim|Temizlik/Sarf">🧹 Temizlik ve Sarf Malzemesi</option>
+                            </optgroup>
+                        </select>
+                        <p class="text-xs font-bold text-indigo-400 mt-2 ml-1">Lütfen planlanmış bir yemeği seçin. Plan dışı işlemse istisnaları kullanın.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        
+                        <div class="md:col-span-2 relative" id="customSelectContainer">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex justify-between">
+                                <span>Çıkış Yapılacak Ürün ve Marka</span>
+                                <span class="text-red-400">*Listeden Seçilmeli</span>
+                            </label>
+                            
+                            <input type="hidden" name="urun_adi_marka" id="hiddenUrunMarka" required>
+                            
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">🔍</span>
+                                <input type="text" id="searchUrunInput" placeholder="Ürün ara ve listeden seç... (Örn: Pirinç)" class="w-full border-2 border-gray-100 pl-10 pr-4 py-4 rounded-xl font-black outline-none bg-gray-50 focus:border-indigo-500 text-sm text-indigo-900 transition" autocomplete="off" oninput="filterCustomSelect()" onclick="openCustomSelect()">
+                            </div>
+                            
+                            <div id="customSelectList" class="hidden absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-2xl max-h-[300px] overflow-y-auto custom-scrollbar">
+                                {% for s in detayli_stoklar %}
+                                <div class="custom-select-item p-4 hover:bg-indigo-50 cursor-pointer border-b border-gray-50 transition-colors" data-value="{{ s.urun_adi }}|{{ s.gercek_marka }}" onclick="selectCustomItem(this, '{{ s.urun_adi }}{% if s.marka %} - {{ s.marka }}{% endif %} (Stok: {{ s.miktar|int if s.miktar % 1 == 0 else s.miktar|round(2) }} {{ s.birim }})')">
+                                    <span class="font-black text-gray-800 block text-sm">{{ s.urun_adi }}</span>
+                                    <span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1 block">
+                                        {% if s.marka %}<span class="text-indigo-500">Marka: {{ s.marka }}</span> | {% endif %}Mevcut Stok: <b class="text-indigo-600">{{ s.miktar|int if s.miktar % 1 == 0 else s.miktar|round(2) }} {{ s.birim }}</b>
+                                    </span>
+                                </div>
+                                {% endfor %}
+                                <div id="customSelectNoResult" class="hidden p-6 text-center text-xs font-bold text-red-500 uppercase tracking-widest bg-red-50">Aradığınız kriterde veya markada ürün bulunamadı.</div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Miktar</label>
+                            <input type="number" step="0.01" name="miktar" required placeholder="0.00" class="w-full border-2 border-gray-100 p-4 rounded-xl font-black outline-none bg-gray-50 text-indigo-700 text-center text-lg">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ekstra Açıklama / Not</label>
+                        <input type="text" name="aciklama" placeholder="Gerekliyse ek not yazın..." class="w-full border-2 border-gray-100 p-4 rounded-xl font-bold outline-none bg-gray-50 text-sm">
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-600 text-white font-black py-4 rounded-xl hover:bg-indigo-700 transition shadow-sm text-sm uppercase tracking-widest mt-4">
+                        {% if session.rol == 'admin' %} Stoktan Çıkışı Onayla {% else %} Talebi İlet (Onaya Gönder) {% endif %}
+                    </button>
+                </form>
+            </div>
+
+            {% if bekleyen_cikislar|length > 0 %}
+            <div class="bg-gray-900 rounded-[2rem] shadow-xl border-t-8 border-orange-500 overflow-hidden w-full">
+                <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                    <h3 class="text-xl font-black text-white flex items-center gap-2">⏳ Onay Bekleyen Mal Çıkış Talepleri</h3>
+                    <span class="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-black">{{ bekleyen_cikislar|length }} Talep</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left whitespace-nowrap text-sm">
+                        <thead class="bg-gray-800 text-gray-400 uppercase text-[10px] tracking-widest">
+                            <tr><th class="p-4">Kullanım Yeri</th><th class="p-4">İstenen Ürün</th><th class="p-4 text-center">Miktar</th><th class="p-4 text-right">Aksiyon / Durum</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800">
+                            {% for b in bekleyen_cikislar %}
+                            <tr class="hover:bg-gray-800 transition">
+                                <td class="p-4">
+                                    <span class="font-bold text-gray-300 block text-sm">{{ b.yemek_adi }}</span>
+                                    <span class="text-[10px] font-black text-orange-400 uppercase tracking-widest">{{ b.tarih }} | {{ b.ogun }}</span>
+                                </td>
+                                <td class="p-4">
+                                    <span class="font-black text-white text-base">{{ b.malzeme_adi }}</span>
+                                    {% if b.marka %}<span class="block text-[10px] text-gray-400 uppercase tracking-widest">{{ b.marka }}</span>{% endif %}
+                                </td>
+                                <td class="p-4 text-center font-black text-orange-400 text-lg">{{ b.miktar|int if b.miktar % 1 == 0 else b.miktar|round(2) }} {{ b.birim }}</td>
+                                <td class="p-4 text-right">
+                                    {% if session.rol == 'admin' %}
+                                        <div class="flex justify-end gap-2">
+                                            <form action="/depo" method="POST" class="m-0">
+                                                <input type="hidden" name="islem_tipi" value="cikis_onayla"><input type="hidden" name="cikis_id" value="{{ b.id }}">
+                                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-4 py-2 rounded-xl text-xs uppercase tracking-widest shadow-sm">Onayla (Düş)</button>
+                                            </form>
+                                            <form action="/depo" method="POST" class="m-0" onsubmit="return confirm('Bu talebi reddetmek istediğinize emin misiniz?');">
+                                                <input type="hidden" name="islem_tipi" value="cikis_reddet"><input type="hidden" name="cikis_id" value="{{ b.id }}">
+                                                <button type="submit" class="bg-red-900/50 hover:bg-red-600 text-red-400 hover:text-white font-black px-4 py-2 rounded-xl text-xs uppercase tracking-widest border border-red-800 transition">Reddet</button>
+                                            </form>
+                                        </div>
+                                    {% else %}
+                                        <span class="bg-orange-900/50 text-orange-400 font-bold px-3 py-2 rounded-xl text-[10px] uppercase tracking-widest border border-orange-800">Yönetici Onayı Bekliyor</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden w-full flex flex-col z-10">
+                <div class="p-8 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div>
+                        <h3 class="font-black text-gray-800 tracking-tight text-xl mb-1">🗄️ Güncel Depo Stokları</h3>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Arama ve Kategori Filtresi</p>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                        <div class="relative w-full md:w-64">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">🔍</span>
+                            <input type="text" id="depoGenelAramaInput" placeholder="Stoklarda ürün ara..." class="w-full border border-gray-300 pl-10 pr-3 py-2.5 rounded-xl text-sm font-bold bg-white outline-none focus:border-indigo-500 text-gray-800 transition shadow-sm" onkeyup="filterStoklar()">
+                        </div>
+                        
+                        <div class="w-full md:w-48">
+                            <select id="kategoriSelect" onchange="filterStoklar()" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm font-black text-gray-700 bg-white outline-none focus:border-indigo-500 transition shadow-sm cursor-pointer">
+                                <option value="Tümü">Tüm Kategoriler</option>
+                                {% for cat in kategoriler %}
+                                    <option value="{{ cat }}">{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto w-full max-h-[600px] custom-scrollbar bg-white">
+                    <table class="w-full text-left text-sm whitespace-nowrap depo-tablosu">
+                        <thead class="text-gray-400 uppercase text-[10px] tracking-widest border-b border-gray-100 bg-white sticky top-0 z-10">
+                            <tr>
+                                <th class="p-6">Ürün Kategorisi & Adı</th>
+                                <th class="p-6 w-48">Stok Durumu / Miktar</th>
+                                {% if session.rol == 'admin' %}<th class="p-6 text-right">Sayım & Ayarlar</th>{% endif %}
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50" id="stokTableBody">
+                            {% for s in stoklar %}
+                            
+                            {% set filtre_kat = "🥩 Kırmızı Et" if "Kırmızı Et" in s.kategori else s.kategori %}
+                            
+                            <tr class="stok-row transition-all duration-300 {% if 'Karkas' in s.urun_adi %} bg-rose-50/50 border border-rose-100 shadow-sm {% else %} hover:bg-indigo-50/30 {% endif %}" data-category="{{ filtre_kat }}">
+                                <td class="p-6">
+                                    <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mb-1">{{ s.kategori }}</span>
+                                    <span class="font-black text-gray-800 {% if 'Karkas' in s.urun_adi %} text-2xl tracking-tighter {% else %} text-lg {% endif %}">
+                                        {{ s.urun_adi }}
+                                        {% if 'Karkas' in s.urun_adi %} <span class="ml-2 text-[10px] bg-rose-600 text-white px-2 py-1 rounded-full uppercase tracking-tighter align-middle">Ana Stok</span> {% endif %}
+                                    </span>
+                                </td>
+                                <td class="p-6">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="font-black {% if s.miktar <= 0 %}text-red-500{% elif s.miktar < 10 %}text-orange-500{% else %}text-emerald-600{% endif %} {% if 'Karkas' in s.urun_adi %} text-3xl {% else %} text-xl {% endif %}">
+                                            {{ s.miktar|int if s.miktar % 1 == 0 else s.miktar|round(2) }} <small class="text-xs">{{ s.birim }}</small>
+                                        </span>
+                                        <span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md {% if s.miktar <= 0 %}bg-red-100 text-red-600{% elif s.miktar < 10 %}bg-orange-100 text-orange-600{% else %}bg-emerald-100 text-emerald-600{% endif %}">
+                                            {% if s.miktar <= 0 %}Tükendi{% elif s.miktar < 10 %}Kritik{% else %}Yeterli{% endif %}
+                                        </span>
+                                    </div>
+                                    {% set pct = (s.miktar / 50 * 100)|round %}
+                                    {% if pct > 100 %}{% set pct = 100 %}{% endif %}
+                                    <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                                        <div class="h-full rounded-full transition-all duration-1000 {% if s.miktar <= 0 %}bg-red-500{% elif s.miktar < 10 %}bg-orange-500{% else %}bg-emerald-500{% endif %}" style="width: {{ pct }}%"></div>
+                                    </div>
+                                </td>
+                                {% if session.rol == 'admin' %}
+                                <td class="p-6 text-right align-middle">
+                                    <div class="flex justify-end items-center gap-3">
+                                        <form action="/depo" method="POST" class="m-0 flex items-center gap-2" onsubmit="return confirm('Stok miktarını değiştirmek üzeresiniz. Emin misiniz?');">
+                                            <input type="hidden" name="islem_tipi" value="manuel_sayim"><input type="hidden" name="urun_id" value="{{ s.id }}">
+                                            <input type="number" step="0.01" name="yeni_miktar" value="{{ s.miktar }}" required class="w-20 border-2 border-gray-100 p-2 rounded-xl font-black text-center outline-none bg-white focus:border-indigo-400 transition text-sm">
+                                            <button type="submit" class="bg-white border border-gray-200 hover:bg-indigo-600 hover:text-white text-gray-600 font-black px-3 py-2 rounded-xl text-[10px] uppercase tracking-widest transition-all shadow-sm" title="Kaydet">✓</button>
+                                        </form>
+                                        <button onclick="openAyarModal({{ s.id }}, '{{ s.urun_adi }}')" class="w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-800 hover:text-white text-gray-500 rounded-xl transition-colors border border-gray-200 shadow-sm" title="Ayarlar & Geçmiş">
+                                            ⚙️
+                                        </button>
+                                    </div>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="p-16 text-center font-bold text-gray-400">Depoda hiç ürün bulunmuyor.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function openCustomSelect() {
+            document.getElementById('customSelectList').classList.remove('hidden');
+        }
+        
+        document.addEventListener('click', function(e) {
+            let container = document.getElementById('customSelectContainer');
+            if (container && !container.contains(e.target)) {
+                document.getElementById('customSelectList').classList.add('hidden');
+            }
+        });
+
+        function filterCustomSelect() {
+            openCustomSelect();
+            let input = document.getElementById('searchUrunInput').value.toLowerCase();
+            let items = document.querySelectorAll('.custom-select-item');
+            let hasResult = false;
+            
+            document.getElementById('hiddenUrunMarka').value = '';
+
+            items.forEach(item => {
+                let text = item.innerText.toLowerCase();
+                if (text.includes(input)) {
+                    item.style.display = 'block';
+                    hasResult = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            document.getElementById('customSelectNoResult').style.display = hasResult ? 'none' : 'block';
+        }
+
+        function selectCustomItem(element, displayText) {
+            document.getElementById('hiddenUrunMarka').value = element.getAttribute('data-value');
+            document.getElementById('searchUrunInput').value = displayText;
+            document.getElementById('customSelectList').classList.add('hidden');
+        }
+
+        function validateCikisForm(form) {
+            if (form.islem_tipi && form.islem_tipi.value === 'depo_cikis') {
+                let hiddenVal = document.getElementById('hiddenUrunMarka').value;
+                if (!hiddenVal) {
+                    alert('Lütfen arama çubuğuna yazdıktan sonra AÇILAN LİSTEDEKİ ÜRÜNE TIKLAYARAK seçim işlemini tamamlayın!');
+                    document.getElementById('searchUrunInput').focus();
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function filterStoklar() {
+            let input = document.getElementById("depoGenelAramaInput").value.toUpperCase();
+            let selectedCat = document.getElementById("kategoriSelect").value;
+            let table = document.querySelector(".depo-tablosu");
+            
+            if (!table) return;
+            let rows = table.querySelectorAll(".stok-row");
+            
+            rows.forEach(row => {
+                let td = row.getElementsByTagName("td")[0];
+                let rowCat = row.getAttribute('data-category');
+                
+                let textMatch = true;
+                if (td) {
+                    let txtValue = td.textContent || td.innerText;
+                    textMatch = txtValue.toUpperCase().indexOf(input) > -1;
+                }
+                
+                let catMatch = (selectedCat === 'Tümü' || rowCat === selectedCat);
+                
+                if (textMatch && catMatch) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+    </script>
+
+    <div id="ayarModal" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300 opacity-0">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="ayarModalBox">
+            
+            <div class="bg-gray-800 p-6 flex justify-between items-center">
+                <h3 class="text-white font-black uppercase tracking-widest text-sm flex items-center gap-2"><span class="text-xl">⚙️</span> <span id="modalUrunAdi">Ürün Adı</span> - Ürün Detayları</h3>
+                <button onclick="closeAyarModal()" class="text-gray-400 hover:text-white transition text-2xl focus:outline-none">&times;</button>
+            </div>
+            
+            <div class="p-8 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                
+                <h4 class="font-black text-gray-800 text-sm uppercase tracking-widest mb-3 flex items-center gap-2"><span>🏢</span> Marka ve Stok Dağılımı</h4>
+                <div id="markaStokDagilimi" class="mb-8 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div class="col-span-full text-center py-4 text-gray-400 font-bold text-xs animate-pulse">Yükleniyor...</div>
+                </div>
+
+                <div class="bg-red-50 border border-red-100 p-5 rounded-2xl mb-8 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-black text-red-800 text-sm uppercase tracking-widest mb-1">Kalıcı Olarak Sil</h4>
+                        <p class="text-[10px] font-bold text-red-500">Bu ürünü stoklardan tamamen kaldırır. Geri alınamaz.</p>
+                    </div>
+                    <form action="/depo" method="POST" class="m-0" onsubmit="return confirm('DİKKAT! Bu ürünü tamamen silmek istediğinize emin misiniz?');">
+                        <input type="hidden" name="islem_tipi" value="urun_sil">
+                        <input type="hidden" name="urun_id" id="modalUrunIdInput" value="">
+                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-black px-6 py-3 rounded-xl text-xs uppercase tracking-widest shadow-md transition">🗑️ Ürünü Sil</button>
+                    </form>
+                </div>
+
+                <h4 class="font-black text-gray-800 text-sm uppercase tracking-widest mb-4 flex items-center gap-2"><span>📅</span> Hareket Geçmişi (Giriş / Çıkış)</h4>
+                <div class="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+                    <div id="gecmisListesi" class="space-y-3">
+                        <div class="text-center py-4 text-gray-400 font-bold text-xs animate-pulse">Kayıtlar aranıyor...</div>
+                    </div>
+                    <button id="loadMoreBtn" onclick="loadMoreGecmis()" class="hidden w-full mt-4 bg-white border border-gray-200 text-gray-600 font-black py-3 rounded-xl text-[10px] uppercase tracking-widest hover:bg-gray-100 transition shadow-sm">
+                        Daha Fazla Göster ⬇️
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tumGecmis = [];
+        let gosterilenAdet = 0;
+
+        function openAyarModal(urunId, urunAdi) {
+            document.getElementById('modalUrunAdi').innerText = urunAdi;
+            document.getElementById('modalUrunIdInput').value = urunId;
+            
+            const m = document.getElementById('ayarModal');
+            const b = document.getElementById('ayarModalBox');
+            m.classList.remove('hidden');
+            setTimeout(() => { m.classList.add('opacity-100'); b.classList.add('scale-100'); }, 10);
+
+            document.getElementById('gecmisListesi').innerHTML = '<div class="text-center py-4 text-gray-400 font-bold text-xs animate-pulse">Kayıtlar aranıyor...</div>';
+            document.getElementById('markaStokDagilimi').innerHTML = '<div class="col-span-full text-center py-4 text-gray-400 font-bold text-xs animate-pulse">Yükleniyor...</div>';
+            document.getElementById('loadMoreBtn').classList.add('hidden');
+            
+            fetch('/api/urun-gecmisi/' + urunId)
+                .then(response => response.json())
+                .then(data => {
+                    let markalar = data.markalar || [];
+                    let markaHtml = '';
+                    if(markalar.length > 0) {
+                        markalar.forEach(m => {
+                            // JAVASCRIPT GÖRÜNÜMÜ İÇİN DE SIFIRLAR ATILDI
+                            let islenmisMiktar = Number(parseFloat(m.miktar).toFixed(2));
+                            markaHtml += `<div class="bg-indigo-50 border border-indigo-100 p-3 rounded-xl shadow-sm text-center">
+                                <span class="block text-[10px] font-black text-indigo-500 uppercase tracking-widest truncate" title="${m.marka}">${m.marka}</span>
+                                <span class="font-black text-indigo-900 text-xl">${islenmisMiktar}</span>
+                            </div>`;
+                        });
+                    } else {
+                        markaHtml = `<div class="col-span-full text-center text-xs font-bold text-gray-400 bg-gray-100 rounded-xl py-3 border border-gray-200">Kayıtlı marka detayı bulunmuyor.</div>`;
+                    }
+                    document.getElementById('markaStokDagilimi').innerHTML = markaHtml;
+
+                    tumGecmis = data.gecmis || [];
+                    gosterilenAdet = 0;
+                    document.getElementById('gecmisListesi').innerHTML = '';
+                    
+                    if (tumGecmis.length === 0) {
+                        document.getElementById('gecmisListesi').innerHTML = '<div class="text-center py-6 text-gray-400 font-bold text-xs uppercase tracking-widest">Bu ürüne ait hareket bulunamadı.</div>';
+                    } else {
+                        loadMoreGecmis();
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('gecmisListesi').innerHTML = '<div class="text-center py-4 text-red-500 font-bold text-xs">Bağlantı hatası oluştu.</div>';
+                    document.getElementById('markaStokDagilimi').innerHTML = '<div class="col-span-full text-center text-xs font-bold text-red-400 py-2">Veri çekilemedi.</div>';
+                });
+        }
+
+        function closeAyarModal() {
+            const m = document.getElementById('ayarModal');
+            const b = document.getElementById('ayarModalBox');
+            m.classList.remove('opacity-100'); b.classList.remove('scale-100');
+            setTimeout(() => { m.classList.add('hidden'); }, 300);
+        }
+
+        function loadMoreGecmis() {
+            const container = document.getElementById('gecmisListesi');
+            let eklenecek = tumGecmis.slice(gosterilenAdet, gosterilenAdet + 5);
+            
+            eklenecek.forEach(kayit => {
+                let renk = kayit.tip === 'GİRİŞ' || kayit.tip === 'ÜRETİM' ? 'text-green-600 bg-green-50 border-green-100' : 'text-orange-600 bg-orange-50 border-orange-100';
+                let ikon = kayit.tip === 'GİRİŞ' || kayit.tip === 'ÜRETİM' ? '📥' : '📤';
+                
+                // JAVASCRIPT GEÇMİŞİ İÇİN SIFIRLAR ATILDI
+                let miktarGosterim = Number(parseFloat(kayit.miktar).toFixed(2));
+                
+                let html = `
+                <div class="flex justify-between items-center p-3 rounded-xl border ${renk} shadow-sm">
+                    <div class="overflow-hidden mr-2">
+                        <span class="block font-black text-sm truncate">${ikon} ${miktarGosterim} ${kayit.birim} <span class="text-[10px] text-gray-500 ml-2 uppercase font-bold">${kayit.tip}</span></span>
+                        <span class="block text-[10px] font-bold text-gray-600 mt-1 truncate">
+                            Sorumlu: <b class="text-gray-800">${kayit.kisi}</b> 
+                            <span class="mx-2 text-gray-300">|</span> 
+                            Notlar: <span class="text-gray-700">${kayit.detay}</span>
+                        </span>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="block text-xs font-black text-gray-800">${kayit.tarih.substring(0, 10)}</span>
+                        <span class="block text-[10px] font-bold text-gray-400">${kayit.tarih.substring(11, 16)}</span>
+                    </div>
+                </div>`;
+                container.innerHTML += html;
+            });
+            
+            gosterilenAdet += 5;
+            if (gosterilenAdet >= tumGecmis.length) {
+                document.getElementById('loadMoreBtn').classList.add('hidden');
+            } else {
+                document.getElementById('loadMoreBtn').classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

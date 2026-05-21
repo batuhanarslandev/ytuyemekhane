@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yemekhane | Et İşleme Operasyonu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f3f4f6; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+        .modal-active { overflow: hidden; }
+        .accordion-content { transition: max-height 0.3s ease-out, opacity 0.3s ease-out; max-height: 0; opacity: 0; overflow: hidden; }
+        .accordion-content.open { max-height: 500px; opacity: 1; }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen font-sans">
+
+    {% include 'sidebar.html' %}
+
+    <div class="ml-64 flex-1 p-10 min-w-0">
+        {% include 'topbar.html' %}
+        
+        <div class="relative overflow-hidden bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8 mb-8">
+            <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-rose-50 rounded-full opacity-50"></div>
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="bg-rose-100 text-rose-600 p-2.5 rounded-2xl text-xl">🥩</span>
+                        <h1 class="text-2xl font-black text-gray-800 tracking-tight">Et İşleme & Hazırlık Şefliği</h1>
+                    </div>
+                    <p class="text-gray-400 font-bold text-sm ml-1">Kimlikli (Damgalı) karkas parçalama ve fire analiz merkezi.</p>
+                </div>
+                <div class="flex gap-4">
+                    <div class="bg-gray-50 border border-gray-100 p-4 rounded-2xl text-center min-w-[140px]">
+                        <span class="block text-[10px] font-black text-gray-400 uppercase mb-1">Lotlu Karkas Stoğu</span>
+                        <span class="text-xl font-black text-rose-600">
+                            {% set total = namespace(value=0) %}
+                            {% for et in et_stoklari %}{% set total.value = total.value + et.kalan_miktar %}{% endfor %}
+                            {{ total.value|round(1) }} <small class="text-xs uppercase">Kg</small>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="p-4 mb-6 rounded-2xl font-bold shadow-sm {% if category == 'error' %}bg-red-50 text-red-600 border-red-200{% else %}bg-green-50 text-green-600 border-green-200{% endif %} flex items-center gap-2">
+                <span>{% if category == 'error' %}⚠️{% else %}✅{% endif %}</span> {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            
+            <button onclick="openEtModal()" class="group bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-2xl hover:border-rose-200 transition-all duration-500 text-left relative overflow-hidden">
+                <div class="absolute -top-4 -right-4 text-8xl opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">🥩</div>
+                <div class="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
+                    <span class="text-3xl">🔪</span>
+                </div>
+                <h3 class="text-xl font-black text-gray-800 mb-2">Damgalı Et İşle</h3>
+                <p class="text-sm text-gray-400 font-bold leading-relaxed mb-6">Lot numaralı karkasları seçerek parçalama işlemini başlatın.</p>
+                <div class="flex items-center text-xs font-black text-rose-600 uppercase tracking-widest bg-rose-50 w-max px-5 py-2.5 rounded-xl group-hover:bg-rose-600 group-hover:text-white transition-all">
+                    Formu Aç <span class="ml-2 group-hover:translate-x-2 transition-transform">➔</span>
+                </div>
+            </button>
+
+            <div class="md:col-span-2 bg-gray-900 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden flex flex-col justify-center">
+                <div class="absolute top-0 right-0 p-8">
+                    <span class="text-5xl opacity-20">🏷️</span>
+                </div>
+                <h3 class="text-white font-black text-lg mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> 
+                    İşlenmeyi Bekleyen Karkaslar (Damga Bazlı)
+                </h3>
+                <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for et in et_stoklari[:6] %}
+                    <div class="bg-white/5 border border-white/10 p-4 rounded-2xl hover:bg-white/10 transition cursor-default">
+                        <span class="block text-[10px] font-black text-rose-400 uppercase mb-1 truncate">{{ et.lot_damga_no if et.lot_damga_no else 'DAMGASIZ' }}</span>
+                        <span class="text-lg font-black text-white block mb-1">{{ et.kalan_miktar }} <small class="text-[10px] opacity-40">KG KALDI</small></span>
+                        <span class="text-[9px] text-gray-400 uppercase tracking-widest">{{ et.tarih[:10] }} | {{ et.urun_adi }}</span>
+                    </div>
+                    {% else %}
+                    <div class="col-span-3 text-gray-500 text-sm font-bold">İşlenecek Lot/Damgalı karkas bulunmuyor.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gray-900 rounded-[2.5rem] shadow-xl border border-gray-800 overflow-hidden mb-10">
+            <div class="p-8 border-b border-gray-800 flex justify-between items-center">
+                <h3 class="text-white font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                    <span class="text-xl">📊</span> Son 5 Karkas Sevkiyatı & Kümülatif Verim Analizi
+                </h3>
+            </div>
+            <div id="ekstra-lotlar-alani" class="grid gap-3 px-6 pb-2"></div>
+            
+            <div class="p-6 text-center border-t border-gray-800">
+                <button onclick="dahaFazlaLotYukle()" id="btnLotYukle" class="bg-gray-800 text-gray-400 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gray-700 hover:text-white transition w-full md:w-auto border border-gray-700">
+                    Daha Eski Sevkiyatları Gör ⬇️
+                </button>
+            </div>
+            <div class="p-6 grid gap-3">
+                {% for karne in lot_karneleri %}
+                <div class="flex flex-col">
+                    <div class="bg-gray-800/50 rounded-2xl p-5 border border-gray-700/50 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-800 transition cursor-pointer z-10" onclick="toggleAccordion({{ karne.id }})">
+                        <div class="flex items-center gap-4 w-full md:w-1/3">
+                            <div class="bg-rose-500/20 text-rose-400 px-4 py-3 rounded-xl font-black text-sm tracking-wider">
+                                {{ karne.damga }}
+                            </div>
+                            <div>
+                                <span class="text-gray-400 text-[10px] font-black uppercase tracking-widest block mb-1">{{ karne.tarih }} | {{ karne.urun }}</span>
+                                <span class="text-white font-black text-lg">Toplam: {{ karne.baslangic }} <small class="text-xs text-gray-500">KG</small></span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-8 w-full md:w-1/3 justify-start md:justify-center">
+                            <div class="text-center">
+                                <span class="block text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">İşlenen</span>
+                                <span class="text-emerald-400 font-black text-xl">{{ karne.islenen }} <small class="text-xs">KG</small></span>
+                            </div>
+                            <div class="text-center">
+                                <span class="block text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Kalan Bakiye</span>
+                                <span class="text-orange-400 font-black text-xl">{{ karne.kalan }} <small class="text-xs">KG</small></span>
+                            </div>
+                        </div>
+
+                        <div class="w-full md:w-1/3 flex justify-end items-center gap-4">
+                            {% if karne.islenen > 0 %}
+                                <div class="text-right hidden md:block">
+                                    <span class="block text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Fire Oranı</span>
+                                    <span class="font-black {% if karne.fire_oran > 25 %}text-red-500{% elif karne.fire_oran > 15 %}text-orange-500{% else %}text-emerald-500{% endif %}">%{{ karne.fire_oran }}</span>
+                                </div>
+                            {% endif %}
+                            <button class="bg-gray-700 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-600 transition shadow-sm" id="btn-{{ karne.id }}">Detayı Gör ⬇️</button>
+                        </div>
+                    </div>
+                    
+                    <div id="panel-{{ karne.id }}" class="accordion-content bg-white rounded-b-2xl border-x border-b border-gray-200 shadow-inner -mt-4 mx-2">
+                        <div class="p-6 pt-10">
+                            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span>🔍</span> Bu Karkastan Bugüne Kadar Elde Edilen Kümülatif Ürünler
+                            </h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Kuşbaşı Toplamı</span>
+                                    <span class="block text-2xl font-black text-gray-800 mt-1">{{ karne.kusbasi }} <small class="text-xs">KG</small></span>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Kıyma Toplamı</span>
+                                    <span class="block text-2xl font-black text-gray-800 mt-1">{{ karne.kiyma }} <small class="text-xs">KG</small></span>
+                                </div>
+                                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sotelik Toplamı</span>
+                                    <span class="block text-2xl font-black text-gray-800 mt-1">{{ karne.sote }} <small class="text-xs">KG</small></span>
+                                </div>
+                                <div class="bg-rose-50 p-4 rounded-xl border border-rose-100 relative overflow-hidden">
+                                    <span class="text-[10px] font-bold text-rose-400 uppercase tracking-widest relative z-10">Kemik / Fire</span>
+                                    <span class="block text-2xl font-black text-rose-600 mt-1 relative z-10">{{ karne.kemik }} <small class="text-xs">KG</small></span>
+                                    <span class="absolute -bottom-2 -right-2 text-5xl font-black text-rose-500 opacity-10">%{{ karne.fire_oran }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-gray-500 text-sm font-bold text-center py-4">Henüz işlenmiş bir sevkiyat kaydı bulunmuyor.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                <h3 class="text-gray-800 font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                    <span class="text-lg">📜</span> Son 5 Parçalama Aksiyonu (Anlık Log)
+                </h3>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50/50 text-gray-400 uppercase text-[10px] font-black tracking-widest border-b">
+                        <tr>
+                            <th class="px-8 py-5">Tarih / Saat</th>
+                            <th class="px-8 py-5">İşlenen Kaynak (Damga)</th>
+                            <th class="px-8 py-5 text-center">Giren Miktar</th>
+                            <th class="px-8 py-5">Anlık Çıkan Ürün Detayları</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        {% for log in gecmis_islemler %}
+                        <tr class="hover:bg-rose-50/30 transition group">
+                            <td class="px-8 py-5">
+                                <span class="text-xs font-bold text-gray-400 block">{{ log.tarih[:10] }}</span>
+                                <span class="text-[10px] text-gray-300 font-bold uppercase">{{ log.tarih[11:16] }}</span>
+                            </td>
+                            <td class="px-8 py-5">
+                                <span class="font-black text-gray-700 block text-sm">{{ log.kaynak }}</span>
+                            </td>
+                            <td class="px-8 py-5 text-center">
+                                <span class="inline-block bg-red-50 text-red-600 px-4 py-1.5 rounded-full font-black text-sm">
+                                    {{ log.harcanan }} <small class="text-[10px]">KG</small>
+                                </span>
+                            </td>
+                            <td class="px-8 py-5">
+                                <div class="flex flex-wrap gap-2">
+                                    {% set detaylar = log.detay.split('|') %}
+                                    {% for detay in detaylar %}
+                                        <span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-[10px] font-black border border-gray-200">
+                                            {{ detay.strip() }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="etModal" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300 opacity-0">
+        <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-4xl overflow-hidden transform scale-95 transition-all duration-300" id="etModalBox">
+            
+            <div class="bg-gray-800 p-6 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🥩</span>
+                    <h3 class="text-white font-black uppercase tracking-widest text-sm">Et Parçalama (Lot) Formu</h3>
+                </div>
+                <button onclick="closeEtModal()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-rose-500 transition text-2xl focus:outline-none">&times;</button>
+            </div>
+            
+            <form action="/et-isleme" method="POST" class="p-10 space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs font-black">1</span>
+                            <label class="text-xs font-black text-rose-500 uppercase tracking-widest">Kaynak Karkas (Lot Seçimi)</label>
+                        </div>
+                        <div class="space-y-4">
+                            <select name="kaynak_lot_id" id="kaynakSecici" required class="w-full border-2 border-rose-100 p-5 rounded-2xl font-bold outline-none focus:border-rose-400 bg-rose-50/50 transition shadow-inner text-sm text-gray-800">
+                                <option value="">İşlenecek Damgalı Eti Seçin...</option>
+                                {% for et in et_stoklari %}
+                                <option value="{{ et.id }}" data-kalan="{{ et.kalan_miktar }}">
+                                    [{{ et.lot_damga_no if et.lot_damga_no else 'DAMGASIZ' }}] - {{ et.urun_adi }} (Bakiye: {{ et.kalan_miktar }} Kg)
+                                </option>
+                                {% endfor %}
+                            </select>
+                            
+                            <div class="relative mt-2">
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-2">İşlenecek Miktar</label>
+                                <input type="number" step="0.01" id="harcanan" name="harcanan_miktar" placeholder="0.00" required class="w-full border-2 border-gray-100 p-6 rounded-3xl text-gray-800 font-black text-4xl text-center outline-none focus:border-rose-400 bg-gray-50 shadow-inner transition" oninput="hesapla()">
+                                <span class="absolute bottom-6 right-6 text-gray-300 font-black text-xl">KG</span>
+                            </div>
+                            <div id="uyariMiktar" class="hidden text-center text-xs font-black text-red-500 uppercase tracking-widest">Uyarı: Lot bakiyesinden fazla girdiniz!</div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-6 h-6 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-black">2</span>
+                            <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Ürünler (Çıkan)</label>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-rose-300 transition">
+                                <span class="text-[10px] font-black text-gray-400 block mb-1 uppercase">Dana Kıyma</span>
+                                <input type="number" step="0.01" name="kiymalik" placeholder="0.00" class="cikan-input w-full bg-transparent font-black text-xl outline-none text-gray-700" oninput="hesapla()">
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-rose-300 transition">
+                                <span class="text-[10px] font-black text-gray-400 block mb-1 uppercase">Dana Kuşbaşı</span>
+                                <input type="number" step="0.01" name="kusbasi" placeholder="0.00" class="cikan-input w-full bg-transparent font-black text-xl outline-none text-gray-700" oninput="hesapla()">
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:border-rose-300 transition">
+                                <span class="text-[10px] font-black text-gray-400 block mb-1 uppercase">Dana Sote</span>
+                                <input type="number" step="0.01" name="sotelik" placeholder="0.00" class="cikan-input w-full bg-transparent font-black text-xl outline-none text-gray-700" oninput="hesapla()">
+                            </div>
+                            <div class="bg-rose-50 p-4 rounded-2xl border border-rose-100 focus-within:border-rose-300 transition">
+                                <span class="text-[10px] font-black text-rose-400 block mb-1 uppercase">Kemik & Fire</span>
+                                <input type="number" step="0.01" name="kemik" placeholder="0.00" class="cikan-input w-full bg-transparent font-black text-xl outline-none text-rose-700" oninput="hesapla()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-gray-100 gap-6">
+                    <div class="text-center md:text-left">
+                        <span class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Hesaplanan Fark</span>
+                        <span id="fark" class="text-3xl font-black text-gray-800 tracking-tighter">0.00 KG</span>
+                    </div>
+                    <button type="submit" id="btnKaydet" class="w-full md:w-auto bg-gray-900 text-white font-black py-5 px-16 rounded-[2rem] hover:bg-black transition-all shadow-xl shadow-gray-200 text-sm tracking-widest uppercase active:scale-95">
+                        İşlemi Tamamla
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Akordiyon Menü Zekası
+        function toggleAccordion(id) {
+            const panel = document.getElementById('panel-' + id);
+            const btn = document.getElementById('btn-' + id);
+            
+            if (panel.classList.contains('open')) {
+                panel.classList.remove('open');
+                btn.innerHTML = "Detayı Gör ⬇️";
+                btn.classList.remove('bg-rose-600');
+                btn.classList.add('bg-gray-700');
+            } else {
+                // Diğer açık olanları kapat
+                document.querySelectorAll('.accordion-content.open').forEach(p => {
+                    p.classList.remove('open');
+                    const bId = p.id.replace('panel-', 'btn-');
+                    document.getElementById(bId).innerHTML = "Detayı Gör ⬇️";
+                    document.getElementById(bId).classList.remove('bg-rose-600');
+                    document.getElementById(bId).classList.add('bg-gray-700');
+                });
+                
+                panel.classList.add('open');
+                btn.innerHTML = "Kapat ⬆️";
+                btn.classList.remove('bg-gray-700');
+                btn.classList.add('bg-rose-600');
+            }
+        }
+
+        function openEtModal() {
+            const m = document.getElementById('etModal');
+            const b = document.getElementById('etModalBox');
+            document.body.classList.add('modal-active');
+            m.classList.remove('hidden');
+            setTimeout(() => { m.classList.add('opacity-100'); b.classList.add('scale-100'); }, 10);
+        }
+
+        function closeEtModal() {
+            const m = document.getElementById('etModal');
+            const b = document.getElementById('etModalBox');
+            document.body.classList.remove('modal-active');
+            m.classList.remove('opacity-100'); b.classList.remove('scale-100');
+            setTimeout(() => { m.classList.add('hidden'); }, 300);
+        }
+
+        function hesapla() {
+            let harcananInput = document.getElementById('harcanan');
+            let secici = document.getElementById('kaynakSecici');
+            let btn = document.getElementById('btnKaydet');
+            let uyari = document.getElementById('uyariMiktar');
+            
+            let harcanan = parseFloat(harcananInput.value) || 0;
+            
+            if(secici.selectedIndex > 0) {
+                let secilenOption = secici.options[secici.selectedIndex];
+                let bakiye = parseFloat(secilenOption.getAttribute('data-kalan')) || 0;
+                
+                if(harcanan > bakiye) {
+                    uyari.classList.remove('hidden');
+                    harcananInput.classList.add('border-red-500', 'text-red-600');
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    uyari.classList.add('hidden');
+                    harcananInput.classList.remove('border-red-500', 'text-red-600');
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+
+            let inputs = document.querySelectorAll('.cikan-input');
+            let toplamCikan = 0;
+            inputs.forEach(input => { toplamCikan += parseFloat(input.value) || 0; });
+            
+            let fark = harcanan - toplamCikan;
+            let farkElement = document.getElementById('fark');
+            farkElement.innerText = fark.toFixed(2) + " KG";
+
+            farkElement.classList.remove('text-rose-600', 'text-emerald-500', 'text-gray-800');
+            
+            if (fark < 0) { farkElement.classList.add('text-rose-600'); } 
+            else if (fark === 0 && harcanan > 0) { farkElement.classList.add('text-emerald-500'); } 
+            else { farkElement.classList.add('text-gray-800'); }
+        }
+        
+        document.getElementById('kaynakSecici').addEventListener('change', hesapla);
+
+        window.onclick = function(event) {
+            const m = document.getElementById('etModal');
+            if (event.target == m) { closeEtModal(); }
+        }
+        let lotOffset = 5; // İlk 5 tanesi zaten Python'dan geldi
+
+        function dahaFazlaLotYukle() {
+            const btn = document.getElementById('btnLotYukle');
+            btn.innerHTML = "Yükleniyor... ⏳";
+            btn.disabled = true;
+
+            fetch('/api/et-arsivi/' + lotOffset)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.length === 0) {
+                        btn.innerHTML = "Başka Kayıt Bulunmuyor";
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                        return;
+                    }
+                    
+                    const container = document.getElementById('ekstra-lotlar-alani');
+                    data.forEach(karne => {
+                        let fireRenk = karne.fire_oran > 25 ? 'text-red-500' : (karne.fire_oran > 15 ? 'text-orange-500' : 'text-emerald-500');
+                        
+                        let html = `
+                        <div class="flex flex-col mt-3">
+                            <div class="bg-gray-800/50 rounded-2xl p-5 border border-gray-700/50 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-800 transition cursor-pointer z-10" onclick="toggleAccordion(${karne.id})">
+                                <div class="flex items-center gap-4 w-full md:w-1/3">
+                                    <div class="bg-rose-500/20 text-rose-400 px-4 py-3 rounded-xl font-black text-sm tracking-wider">${karne.damga}</div>
+                                    <div>
+                                        <span class="text-gray-400 text-[10px] font-black uppercase tracking-widest block mb-1">${karne.tarih} | ${karne.urun}</span>
+                                        <span class="text-white font-black text-lg">Toplam: ${karne.baslangic} <small class="text-xs text-gray-500">KG</small></span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-8 w-full md:w-1/3 justify-start md:justify-center">
+                                    <div class="text-center">
+                                        <span class="block text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">İşlenen</span>
+                                        <span class="text-emerald-400 font-black text-xl">${karne.islenen} <small class="text-xs">KG</small></span>
+                                    </div>
+                                    <div class="text-center">
+                                        <span class="block text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Kalan</span>
+                                        <span class="text-orange-400 font-black text-xl">${karne.kalan} <small class="text-xs">KG</small></span>
+                                    </div>
+                                </div>
+                                <div class="w-full md:w-1/3 flex justify-end items-center gap-4">
+                                    ${karne.islenen > 0 ? `<div class="text-right hidden md:block"><span class="block text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Fire Oranı</span><span class="font-black ${fireRenk}">%${karne.fire_oran}</span></div>` : ''}
+                                    <button class="bg-gray-700 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-600 transition" id="btn-${karne.id}">Detayı Gör ⬇️</button>
+                                </div>
+                            </div>
+                            
+                            <div id="panel-${karne.id}" class="accordion-content bg-white rounded-b-2xl border-x border-b border-gray-200 shadow-inner -mt-4 mx-2">
+                                <div class="p-6 pt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100"><span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Kuşbaşı Toplamı</span><span class="block text-2xl font-black text-gray-800 mt-1">${karne.kusbasi} <small class="text-xs">KG</small></span></div>
+                                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100"><span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Kıyma Toplamı</span><span class="block text-2xl font-black text-gray-800 mt-1">${karne.kiyma} <small class="text-xs">KG</small></span></div>
+                                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100"><span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sotelik Toplamı</span><span class="block text-2xl font-black text-gray-800 mt-1">${karne.sote} <small class="text-xs">KG</small></span></div>
+                                    <div class="bg-rose-50 p-4 rounded-xl border border-rose-100 relative overflow-hidden"><span class="text-[10px] font-bold text-rose-400 uppercase tracking-widest relative z-10">Kemik / Fire</span><span class="block text-2xl font-black text-rose-600 mt-1 relative z-10">${karne.kemik} <small class="text-xs">KG</small></span></div>
+                                </div>
+                            </div>
+                        </div>`;
+                        container.innerHTML += html;
+                    });
+                    
+                    lotOffset += 5;
+                    btn.innerHTML = "Daha Eski Sevkiyatları Gör ⬇️";
+                    btn.disabled = false;
+                })
+                .catch(err => {
+                    btn.innerHTML = "Bağlantı Hatası!";
+                });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yemekhane | Periyodik Bakım Çizelgesi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex min-h-screen font-sans">
+
+    {% include 'sidebar.html' %}
+
+    <div class="ml-64 flex-1 p-10 min-w-0">
+        {% include 'topbar.html' %}
+        
+        <div class="mb-8 border-b border-gray-200 pb-6 flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl font-black text-gray-800">🔧 Periyodik Bakım Merkezi</h1>
+                <p class="text-gray-500 font-bold mt-2">Mutfak ekipmanlarının bakımlarını ay bazında onaylayın ve yıllık matris tablosundan tüm tesisi izleyin.</p>
+            </div>
+            
+            <!-- AY SEÇİCİ -->
+            <form action="/periyodik-bakim" method="GET" class="flex gap-2 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+                <input type="number" name="yil" value="{{ secilen_yil }}" class="w-24 border border-gray-200 rounded-lg p-3 font-bold text-sm outline-none bg-gray-50 text-center" onchange="this.form.submit()">
+                <select name="ay" class="border border-gray-200 rounded-lg p-3 font-bold text-sm outline-none bg-gray-50 text-purple-700" onchange="this.form.submit()">
+                    {% for ay_no, ay_isim in ay_isimleri.items() %}
+                        <option value="{{ ay_no }}" {% if secilen_ay == ay_no %}selected{% endif %}>{{ ay_isim }} Ayı</option>
+                    {% endfor %}
+                </select>
+                <a href="/periyodik-bakim" class="bg-gray-800 text-white font-bold p-3 rounded-lg hover:bg-black text-xs flex items-center">Bu Aya Dön</a>
+            </form>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="p-4 mb-6 rounded-xl font-bold shadow-sm {% if category == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10">
+            
+            <!-- SOL: SEÇİLİ AY KONTROL PANELİ -->
+            <div class="xl:col-span-2 space-y-6">
+                <h2 class="text-xl font-black text-gray-800 uppercase tracking-widest border-b-2 border-purple-200 pb-2 inline-block">📅 {{ ay_isimleri[secilen_ay] }} Ayı Bakım Onayları</h2>
+                
+                {% for ab in aylik_bakimlar %}
+                <div class="bg-white p-6 rounded-2xl shadow-sm border {% if ab.durum == 'Yapıldı' %}border-green-200 bg-green-50/30{% else %}border-orange-200 bg-orange-50/30{% endif %} flex justify-between items-center">
+                    <div>
+                        <h4 class="text-xl font-black text-gray-800">{{ ab.ekipman_adi }}</h4>
+                        {% if ab.durum == 'Yapıldı' %}
+                            <span class="text-xs font-bold text-green-600">Bu ayın evrakları sisteme işlendi.</span>
+                        {% else %}
+                            <span class="text-xs font-bold text-orange-600">Bakım bekleniyor. İşlem bittikten sonra yandaki butondan onaylayın.</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        {% if ab.durum == 'Yapıldı' %}
+                            <form action="/periyodik-bakim" method="POST" class="m-0 flex items-center gap-3">
+                                <span class="bg-green-600 text-white font-black px-4 py-2 rounded-lg text-sm shadow-sm">✅ EVRAK ALINDI</span>
+                                <input type="hidden" name="islem_tipi" value="bakim_geri_al"><input type="hidden" name="bakim_id" value="{{ ab.id }}"><input type="hidden" name="yil" value="{{ secilen_yil }}"><input type="hidden" name="ay" value="{{ secilen_ay }}">
+                                <button type="submit" class="text-red-500 hover:text-red-700 font-bold text-[10px] bg-white border border-red-200 px-2 py-1 rounded">Geri Al ↩️</button>
+                            </form>
+                        {% else %}
+                            <form action="/periyodik-bakim" method="POST" class="m-0">
+                                <input type="hidden" name="islem_tipi" value="bakim_yapildi"><input type="hidden" name="bakim_id" value="{{ ab.id }}"><input type="hidden" name="yil" value="{{ secilen_yil }}"><input type="hidden" name="ay" value="{{ secilen_ay }}">
+                                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-black px-6 py-3 rounded-xl transition shadow-md text-sm uppercase tracking-widest animate-pulse">Evrak Alındı (İşle)</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="bg-white p-10 rounded-2xl text-center shadow-sm border border-gray-100">
+                    <span class="text-3xl block mb-2">🎉</span>
+                    <h4 class="text-gray-500 font-bold text-sm">Seçili ay için planlanmış bir periyodik bakım bulunmuyor.</h4>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- SAĞ: YENİ CİHAZ EKLEME FORMU -->
+            <div class="xl:col-span-1 bg-white p-6 rounded-[2rem] shadow-sm border border-purple-100 border-l-8 border-l-purple-600 h-max">
+                <h3 class="text-lg font-black text-gray-800 mb-4 flex items-center gap-2">✍️ Yeni Cihaz Planı Oluştur</h3>
+                <form action="/periyodik-bakim" method="POST" class="space-y-4">
+                    <input type="hidden" name="islem_tipi" value="bakim_ekle">
+                    <input type="hidden" name="ay" value="{{ secilen_ay }}">
+                    <input type="hidden" name="yil" value="{{ secilen_yil }}">
+                    
+                    <input type="text" name="ekipman_adi" placeholder="Örn: Havalandırma Motoru" required class="w-full border-2 border-gray-100 p-3 rounded-xl font-bold outline-none focus:border-purple-500 bg-gray-50 text-sm">
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Hangi Aylarda Yapılacak?</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            {% for ay_no, ay_isim in ay_isimleri.items() %}
+                            <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+                                <input type="checkbox" name="aylar[]" value="{{ ay_no }}" class="w-4 h-4 text-purple-600">
+                                <span class="font-bold text-gray-600 text-[10px] uppercase">{{ ay_isim }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-gray-800 text-white font-black py-3 rounded-xl hover:bg-black transition text-xs tracking-widest uppercase">Çizelgeye Ekle</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- YILLIK DEV MATRİS TABLOSU -->
+        <!-- ========================================== -->
+        <div class="bg-gray-900 p-8 rounded-[2rem] shadow-xl border-t-8 border-purple-500 mt-12">
+            <div class="flex justify-between items-end mb-6">
+                <div>
+                    <h3 class="text-2xl font-black text-white mb-2 flex items-center gap-2">📊 Yıllık Periyodik Bakım Matrisi ({{ secilen_yil }})</h3>
+                    <p class="text-gray-400 font-bold text-sm">Aşağıdaki tablo, tüm tesisin yıllık bakım röntgenidir. Kırmızı alanlar aksatılmış bakımları, yeşil alanlar ise evrakı alınmış tamamlanmış süreçleri gösterir.</p>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left whitespace-nowrap">
+                    <thead class="bg-gray-800 text-gray-400 uppercase text-[10px] tracking-widest border-b border-gray-700">
+                        <tr>
+                            <th class="p-4 rounded-tl-xl sticky left-0 bg-gray-800 z-10 w-64">Cihaz / Ekipman Adı</th>
+                            {% for ay_no, ay_isim in ay_isimleri.items() %}
+                            <th class="p-4 text-center">{{ ay_isim[:3] }}</th>
+                            {% endfor %}
+                            <th class="p-4 text-right rounded-tr-xl">Aksiyon</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-800 text-xs">
+                        {% for b in bakimlar %}
+                        <tr class="hover:bg-gray-800 transition">
+                            <td class="p-4 font-black text-gray-200 sticky left-0 bg-gray-900 z-10 truncate max-w-[250px]">{{ b.ekipman_adi }}</td>
+                            
+                            <!-- MATRİS HÜCRELERİ (1'den 12'ye) -->
+                            {% for ay_no in range(1, 13) %}
+                                {% set durum = matris[b.id]['aylar'][ay_no|string] %}
+                                <td class="p-2 text-center border-l border-gray-800">
+                                    {% if durum == 'Yapıldı' %}
+                                        <div class="w-full h-8 bg-green-500 rounded-lg flex items-center justify-center text-white text-[10px] font-black shadow-inner cursor-help" title="Evrak Alındı">✅</div>
+                                    {% elif durum == 'Bekliyor' %}
+                                        <div class="w-full h-8 bg-red-500 rounded-lg flex items-center justify-center text-white text-[10px] font-black shadow-inner cursor-help animate-pulse" title="Bakım Bekliyor!">⚠️</div>
+                                    {% else %}
+                                        <div class="w-full h-8 bg-gray-800 rounded-lg flex items-center justify-center text-gray-600 text-[10px] font-bold opacity-50">-</div>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                            
+                            <td class="p-4 text-right">
+                                <form action="/periyodik-bakim" method="POST" class="m-0" onsubmit="return confirm('Bu cihazı ve tüm geçmiş loglarını silmek istediğinize emin misiniz?');">
+                                    <input type="hidden" name="islem_tipi" value="bakim_sil"><input type="hidden" name="bakim_id" value="{{ b.id }}"><input type="hidden" name="yil" value="{{ secilen_yil }}"><input type="hidden" name="ay" value="{{ secilen_ay }}">
+                                    <button type="submit" class="text-gray-500 hover:text-red-500 font-bold p-2">🗑️</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="14" class="p-10 text-center text-gray-600 font-bold">Sisteme kayıtlı periyodik bakım bulunmuyor.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-6 flex gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-500 justify-end">
+                <span class="flex items-center gap-1"><div class="w-3 h-3 bg-gray-800 rounded"></div> Bakım Yok</span>
+                <span class="flex items-center gap-1"><div class="w-3 h-3 bg-red-500 rounded"></div> Bekliyor / Gecikmiş</span>
+                <span class="flex items-center gap-1"><div class="w-3 h-3 bg-green-500 rounded"></div> Yapıldı (Evraklı)</span>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

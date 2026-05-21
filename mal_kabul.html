@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yemekhane | Mal Kabul</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        @media (max-width: 768px) { #main-content-area { margin-left: 0 !important; } }
+    </style>
+</head>
+<body class="bg-gray-50 flex min-h-screen font-sans">
+
+    {% include 'sidebar.html' %}
+
+    <div id="main-content-area" class="ml-64 flex-1 min-w-0 pb-24 md:pb-0 transition-all duration-300">
+        
+        <div class="p-6 md:p-10 pb-0">
+            {% include 'topbar.html' %}
+            <div class="mb-6 md:mb-8 border-b border-gray-200 pb-6">
+                <h1 class="text-2xl md:text-3xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+                    <span class="bg-emerald-100 text-emerald-600 p-2 rounded-xl">📥</span> Mal Kabul Operasyonu
+                </h1>
+                <p class="text-gray-500 font-bold mt-2 text-xs md:text-sm">Tedarikçiden gelen ürünlerin depo girişi ve onay süreçleri.</p>
+            </div>
+        </div>
+
+        <div class="p-6 md:p-10 pt-0 w-full max-w-7xl mx-auto space-y-6 md:space-y-8">
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="p-4 rounded-xl font-bold shadow-sm {% if category == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                <h2 class="text-lg font-black text-gray-800 mb-6 flex items-center gap-2"><span>➕</span> Yeni Ürün Girişi</h2>
+                
+                <form action="/mal-kabul" method="POST" class="space-y-5">
+                    <input type="hidden" name="islem_tipi" value="ekle">
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+                        <div class="lg:col-span-2">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Ürün Adı</label>
+                            <input type="text" name="urun_adi" required placeholder="Örn: Osmancık Pirinç" class="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Miktar</label>
+                            <input type="number" step="0.01" name="miktar" required placeholder="0.00" class="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-black text-emerald-600 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Birim</label>
+                            <select name="birim" class="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-emerald-500">
+                                <option value="KG">Kilogram (KG)</option>
+                                <option value="LT">Litre (LT)</option>
+                                <option value="ADET">Adet</option>
+                                <option value="KOLİ">Koli</option>
+                                <option value="ÇUVAL">Çuval</option>
+                                <option value="TENEKE">Teneke</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Kategori</label>
+                            <select name="kategori" class="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-emerald-500">
+                                <option value="Temel Gıda">Temel Gıda</option>
+                                <option value="Sebze / Meyve">Sebze / Meyve</option>
+                                <option value="🥩 Kırmızı Et">Kırmızı Et</option>
+                                <option value="🍗 Beyaz Et">Beyaz Et</option>
+                                <option value="Süt Ürünleri">Süt Ürünleri</option>
+                                <option value="İçecek">İçecek</option>
+                                <option value="Ambalaj / Temizlik">Ambalaj / Temizlik</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Marka</label>
+                            <input type="text" name="marka" placeholder="Opsiyonel" class="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-emerald-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Tedarikçi Firma</label>
+                            <input type="text" name="tedarikci" required placeholder="Firma Adı" class="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-emerald-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">SKT / Tarih</label>
+                            <input type="date" name="skt" class="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-emerald-500 transition">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5 pt-2 border-t border-gray-100">
+                        <div class="flex gap-4">
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Lot / Damga No</label>
+                                <input type="text" name="lot_damga_no" placeholder="Et vs. için" class="w-full bg-indigo-50 border border-indigo-100 p-3.5 rounded-xl text-sm font-bold text-indigo-800 outline-none focus:border-indigo-400 transition">
+                            </div>
+                            <div class="w-32">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Takım (Adet)</label>
+                                <input type="number" step="0.5" name="takim_sayisi" placeholder="0" class="w-full bg-indigo-50 border border-indigo-100 p-3.5 rounded-xl text-sm font-black text-indigo-800 outline-none focus:border-indigo-400 transition text-center">
+                            </div>
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4 items-end">
+                            <div class="flex-1 w-full">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Açıklama / Not</label>
+                                <input type="text" name="notlar" placeholder="Hasar, irsaliye no vs." class="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-emerald-500 transition">
+                            </div>
+                            <button type="submit" class="w-full md:w-auto bg-gray-900 hover:bg-black text-white px-8 py-3.5 rounded-xl font-black text-sm uppercase tracking-widest transition shadow-lg shrink-0">
+                                {% if session.rol == 'admin' %}Direkt Kaydet{% else %}Onaya Gönder{% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            {% if bekleyenler %}
+            <div class="bg-amber-50 p-6 md:p-8 rounded-[2rem] shadow-sm border border-amber-200">
+                <h2 class="text-lg font-black text-amber-900 mb-6 flex items-center gap-2"><span>⏳</span> Onay Bekleyen Girişler</h2>
+                
+                <div class="hidden md:block overflow-x-auto bg-white rounded-2xl border border-amber-100 shadow-sm">
+                    <table class="w-full text-left whitespace-nowrap">
+                        <thead class="bg-amber-100/50 text-amber-800 text-[10px] uppercase font-black tracking-widest border-b border-amber-100">
+                            <tr>
+                                <th class="p-4">Ürün / Marka</th>
+                                <th class="p-4">Tedarikçi</th>
+                                <th class="p-4 text-center">Miktar</th>
+                                <th class="p-4">Giriş Yapan</th>
+                                <th class="p-4 text-right">Aksiyon (Admin)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-amber-50 text-sm">
+                            {% for b in bekleyenler %}
+                            <tr class="hover:bg-amber-50/50 transition">
+                                <td class="p-4">
+                                    <div class="font-black text-gray-800">{{ b.urun_adi }}</div>
+                                    <div class="text-[10px] font-bold text-gray-500 uppercase">{{ b.marka if b.marka else 'Markasız' }} | Lot: {{ b.lot_damga_no if b.lot_damga_no else '-' }}</div>
+                                </td>
+                                <td class="p-4 font-bold text-gray-600">{{ b.tedarikci }}</td>
+                                <td class="p-4 text-center">
+                                    <span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-lg font-black">{{ b.miktar }} {{ b.birim }}</span>
+                                </td>
+                                <td class="p-4 text-xs font-bold text-gray-500">{{ b.kabul_eden }}<br><span class="text-[9px]">{{ b.tarih[:16] }}</span></td>
+                                <td class="p-4 text-right">
+                                    {% if session.rol == 'admin' %}
+                                    <div class="flex justify-end gap-2">
+                                        <button onclick="islemYap('onayla', {{ b.id }})" class="bg-emerald-100 hover:bg-emerald-500 text-emerald-700 hover:text-white px-3 py-1.5 rounded-lg text-xs font-black uppercase transition">Onayla</button>
+                                        <button onclick="islemYap('sartli_kabul', {{ b.id }})" class="bg-orange-100 hover:bg-orange-500 text-orange-700 hover:text-white px-3 py-1.5 rounded-lg text-xs font-black uppercase transition">Şartlı</button>
+                                        <button onclick="islemYap('reddet', {{ b.id }})" class="bg-red-100 hover:bg-red-500 text-red-700 hover:text-white px-3 py-1.5 rounded-lg text-xs font-black uppercase transition">Red</button>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-amber-500 font-black text-xs uppercase">Bekliyor</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="md:hidden space-y-4">
+                    {% for b in bekleyenler %}
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-amber-100 flex flex-col gap-3 relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[9px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-2 py-1 rounded-lg">{{ b.kategori }}</span>
+                                <h3 class="font-black text-gray-800 text-lg mt-2 leading-tight">{{ b.urun_adi }}</h3>
+                                <p class="text-xs font-bold text-gray-400 mt-0.5">{{ b.marka if b.marka else 'Markasız' }} • {{ b.tedarikci }}</p>
+                            </div>
+                            <div class="bg-amber-50 rounded-xl p-2 text-center border border-amber-100 min-w-[70px]">
+                                <span class="block text-lg font-black text-amber-700">{{ b.miktar }}</span>
+                                <span class="block text-[9px] font-black text-amber-500 uppercase">{{ b.birim }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg text-[10px] font-bold text-gray-500 border border-gray-100">
+                            <span>Gönderen: {{ b.kabul_eden }}</span>
+                            <span>Tarih: {{ b.tarih[8:10] }}.{{ b.tarih[5:7] }} {{ b.tarih[11:16] }}</span>
+                        </div>
+
+                        {% if session.rol == 'admin' %}
+                        <div class="grid grid-cols-2 gap-2 mt-1 border-t border-gray-100 pt-3">
+                            <button onclick="islemYap('onayla', {{ b.id }})" class="bg-emerald-50 border border-emerald-100 text-emerald-600 active:bg-emerald-500 active:text-white py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition">✅ Onayla</button>
+                            <button onclick="islemYap('reddet', {{ b.id }})" class="bg-red-50 border border-red-100 text-red-600 active:bg-red-500 active:text-white py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition">❌ Reddet</button>
+                            <button onclick="islemYap('sartli_kabul', {{ b.id }})" class="col-span-2 bg-orange-50 border border-orange-100 text-orange-600 active:bg-orange-500 active:text-white py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition">⚠️ Şartlı Kabul Et</button>
+                        </div>
+                        {% else %}
+                        <div class="bg-amber-100 text-amber-700 text-center py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-200 mt-1">⏳ Yetkili Onayı Bekleniyor</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <form id="aksiyonFormu" action="/mal-kabul" method="POST" class="hidden">
+                <input type="hidden" name="islem_tipi" id="gizli_islem">
+                <input type="hidden" name="log_id" id="gizli_id">
+                <input type="hidden" name="islem_notu" id="gizli_not">
+            </form>
+
+            <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-gray-100">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <h2 class="text-lg font-black text-gray-800 flex items-center gap-2"><span>🗄️</span> Geçmiş Mal Kabul Kayıtları</h2>
+                    <form method="GET" class="flex gap-2 w-full md:w-auto">
+                        <input type="month" name="ay" value="{{ secilen_ay }}" class="flex-1 bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl text-sm font-bold outline-none">
+                        <button type="submit" class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition shrink-0">Filtrele</button>
+                    </form>
+                </div>
+
+                <div class="hidden md:block overflow-x-auto bg-gray-50 rounded-2xl border border-gray-100">
+                    <table class="w-full text-left whitespace-nowrap">
+                        <thead class="text-gray-400 text-[10px] uppercase font-black tracking-widest border-b border-gray-200">
+                            <tr>
+                                <th class="p-4">Tarih</th>
+                                <th class="p-4">Ürün Detayı</th>
+                                <th class="p-4">Tedarikçi / Lot</th>
+                                <th class="p-4 text-center">Miktar</th>
+                                <th class="p-4 text-right">Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm">
+                            {% for l in loglar %}
+                            <tr class="hover:bg-white transition">
+                                <td class="p-4 text-xs font-bold text-gray-500">{{ l.tarih[:16] }}</td>
+                                <td class="p-4">
+                                    <div class="font-black text-gray-800">{{ l.urun_adi }}</div>
+                                    <div class="text-[10px] font-bold text-gray-500">{{ l.kategori }} | {{ l.marka if l.marka else 'Markasız' }}</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-gray-700">{{ l.tedarikci }}</div>
+                                    <div class="text-[10px] text-gray-400">Lot: {{ l.lot_damga_no if l.lot_damga_no else '-' }}</div>
+                                </td>
+                                <td class="p-4 text-center">
+                                    <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-lg font-black">{{ l.miktar }} {{ l.birim }}</span>
+                                </td>
+                                <td class="p-4 text-right">
+                                    {% if l.onay_durumu == 'Onaylandı' %}
+                                        <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-100"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Onaylı</span>
+                                    {% else %}
+                                        <span class="inline-flex items-center gap-1 bg-orange-50 text-orange-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-orange-100"><span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span> Şartlı</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-center py-8 text-gray-400 font-bold text-sm">Bu ay için geçmiş kayıt bulunmuyor.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="md:hidden space-y-3">
+                    {% for l in loglar %}
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between gap-3">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-black text-gray-800 text-sm truncate">{{ l.urun_adi }}</h4>
+                            <p class="text-[10px] font-bold text-gray-400 truncate">{{ l.tedarikci }} • {{ l.tarih[8:10] }}.{{ l.tarih[5:7] }}</p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <span class="block font-black text-gray-800">{{ l.miktar }} <span class="text-[9px] text-gray-500">{{ l.birim }}</span></span>
+                            <span class="text-[9px] font-black uppercase tracking-widest {{ 'text-emerald-500' if l.onay_durumu == 'Onaylandı' else 'text-orange-500' }}">{{ l.onay_durumu }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-6 text-gray-400 font-bold text-xs bg-gray-50 rounded-xl border border-gray-100">Bu aya ait kayıt yok.</div>
+                    {% endfor %}
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function islemYap(islemTipi, id) {
+            let not = "";
+            if (islemTipi === 'sartli_kabul' || islemTipi === 'reddet') {
+                not = prompt(islemTipi === 'reddet' ? "Lütfen RET sebebini yazınız:" : "Lütfen ŞARTLI KABUL detayını yazınız:");
+                if (not === null) return; // Kullanıcı iptal etti
+                if (not.trim() === "") {
+                    alert("Açıklama girmek zorunludur!");
+                    return;
+                }
+            } else {
+                if(!confirm('Bu mal kabulünü tamamen ONAYLAMAK istediğinize emin misiniz? (Stok eklenecek)')) return;
+            }
+            
+            document.getElementById('gizli_islem').value = islemTipi;
+            document.getElementById('gizli_id').value = id;
+            document.getElementById('gizli_not').value = not;
+            document.getElementById('aksiyonFormu').submit();
+        }
+    </script>
+</body>
+</html>
